@@ -1,0 +1,287 @@
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+/* === 検索セクション === */
+.searchSection {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.title {
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 15px;
+  margin-bottom: 32px;
+}
+
+.searchForm {
+  display: flex;
+  gap: 12px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.inputWrapper {
+  flex: 1;
+  position: relative;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  z-index: 1;
+}
+
+.searchInput {
+  padding-left: 44px !important;
+  font-size: 16px !important;
+}
+
+.searchButton {
+  white-space: nowrap;
+  min-width: 120px;
+}
+
+/* === サンプル住所 === */
+.sampleAddresses {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.sampleLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sampleButton {
+  padding: 4px 12px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: 100px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: all var(--transition-fast);
+}
+
+.sampleButton:hover {
+  border-color: var(--border-glow);
+  color: var(--primary-light);
+}
+
+/* === エラー表示 === */
+.errorBox {
+  max-width: 700px;
+  margin: 0 auto 24px;
+  padding: 16px 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  color: var(--danger);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* === 結果セクション === */
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* === 位置情報・地図 === */
+.mapSection {
+  padding: 28px;
+}
+
+.locationInfo {
+  margin-bottom: 16px;
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.locationInfo strong {
+  color: var(--text-secondary);
+}
+
+/* === 用途地域マップリンク === */
+.zoningMapSection {
+  padding: 28px;
+  text-align: center;
+}
+
+.zoningNote {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 20px;
+  line-height: 1.7;
+}
+
+.mapLink {
+  display: inline-flex;
+}
+
+/* === 用途地域一覧 === */
+.zoningListSection {
+  padding: 28px;
+}
+
+.zoningGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.zoningCard {
+  width: 100%;
+  text-align: left;
+  padding: 14px 20px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+}
+
+.zoningCard:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.zoningCardActive {
+  background: rgba(99, 102, 241, 0.08) !important;
+  border-color: var(--border-glow);
+}
+
+.zoningCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.zoningName {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.zoningDetail {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.zoningExplanation {
+  padding: 12px 16px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+/* === 自治体情報 === */
+.municipalitySection {
+  padding: 28px;
+}
+
+.municipalityGrid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.infoItem {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+  align-items: flex-start;
+}
+
+.infoLabel {
+  min-width: 140px;
+  color: var(--text-muted);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.infoValue {
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.guidelineLink {
+  margin-top: 8px;
+}
+
+/* === 免責事項 === */
+.disclaimer {
+  padding: 16px 20px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--warning);
+  line-height: 1.7;
+}
+
+/* === レスポンシブ === */
+@media (max-width: 768px) {
+  .searchForm {
+    flex-direction: column;
+  }
+
+  .searchButton {
+    width: 100%;
+  }
+
+  .zoningCardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .infoItem {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .infoLabel {
+    min-width: unset;
+  }
+}

@@ -1,0 +1,239 @@
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.title {
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 15px;
+  max-width: 600px;
+  margin: 0 auto 48px;
+  line-height: 1.7;
+}
+
+/* === 凡例 === */
+.legend {
+  padding: 24px 28px;
+  margin-bottom: 32px;
+}
+
+.legend h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.legendItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* === テーブル === */
+.tableWrapper {
+  padding: 28px;
+  margin-bottom: 48px;
+}
+
+.tableTitle {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th {
+  text-align: left;
+  padding: 12px 16px;
+  background: var(--bg-glass);
+  border-bottom: 2px solid var(--border-color);
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: top;
+}
+
+.table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.zoneName {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.zoneColor {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.mainUse {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* === 詳細カード === */
+.detailCards {
+  margin-bottom: 48px;
+}
+
+.detailTitle {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 24px;
+}
+
+.detailCard {
+  padding: 24px;
+  margin-bottom: 16px;
+  border-left: 4px solid;
+}
+
+.detailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.detailHeader h3 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.statuses {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.detailDescription {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 16px;
+  line-height: 1.7;
+}
+
+.detailExplanation {
+  padding: 16px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+.detailExplanation strong {
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* === 注意事項 === */
+.notice {
+  padding: 28px;
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+  border-radius: var(--radius-lg);
+  margin-bottom: 32px;
+}
+
+.notice h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--warning);
+}
+
+.notice ul {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notice li {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* === 参考リンク === */
+.references {
+  padding: 28px;
+  margin-bottom: 32px;
+}
+
+.references h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.refLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.refLinks a {
+  font-size: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
+}
+
+.refLinks a:hover {
+  padding-left: 8px;
+}
+
+/* === レスポンシブ === */
+@media (max-width: 768px) {
+  .detailHeader {
+    flex-direction: column;
+  }
+
+  .legendItems {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
