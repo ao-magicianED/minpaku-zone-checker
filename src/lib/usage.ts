@@ -20,28 +20,23 @@ export interface ConsumeUsageResult {
 const USAGE_COUNTERS_TABLE = 'usage_counters';
 let supabaseAdminClient: SupabaseClient | null = null;
 
-// Initializing fresh client every time for debugging
 function getSupabaseAdminClient(): SupabaseClient {
-  // if (supabaseAdminClient) return supabaseAdminClient; // Disabled for debugging
+  if (supabaseAdminClient) return supabaseAdminClient;
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  // Hardcoded key for debugging (Taken from previous subagent verification)
-  const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpbGFiZXRieGNnem5kcWpsaGtsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTQyNzc2NiwiZXhwIjoyMDg3MDAzNzY2fQ.woPtVfj17N2-Q1D4tS2R3_rV-5gI-wXJp_u6W8E4XkQ';
-
-  console.log('[DEBUG] Hardcoded Key Used');
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error('[ERROR] Missing Supabase Env Vars');
     throw new Error('SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   }
 
-  // Always create new client
-  return createClient(supabaseUrl, serviceRoleKey, {
+  supabaseAdminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
     },
   });
+  return supabaseAdminClient;
 }
 
 function getUsageHashSalt(): string {
