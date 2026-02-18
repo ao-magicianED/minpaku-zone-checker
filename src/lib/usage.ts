@@ -20,22 +20,32 @@ export interface ConsumeUsageResult {
 const USAGE_COUNTERS_TABLE = 'usage_counters';
 let supabaseAdminClient: SupabaseClient | null = null;
 
+// Initializing fresh client every time for debugging
 function getSupabaseAdminClient(): SupabaseClient {
-  if (supabaseAdminClient) return supabaseAdminClient;
+  // if (supabaseAdminClient) return supabaseAdminClient; // Disabled for debugging
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  console.log('[DEBUG] getSupabaseAdminClient called');
+  console.log('[DEBUG] Supabase URL:', supabaseUrl);
+  console.log('[DEBUG] Service Role Key Length:', serviceRoleKey?.length);
+  if (serviceRoleKey) {
+    console.log('[DEBUG] Service Role Key Prefix:', serviceRoleKey.substring(0, 10));
+  }
+
   if (!supabaseUrl || !serviceRoleKey) {
+    console.error('[ERROR] Missing Supabase Env Vars');
     throw new Error('SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   }
 
-  supabaseAdminClient = createClient(supabaseUrl, serviceRoleKey, {
+  // Always create new client
+  return createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
     },
   });
-  return supabaseAdminClient;
 }
 
 function getUsageHashSalt(): string {
