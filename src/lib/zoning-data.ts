@@ -68,7 +68,7 @@ export const ZONING_TYPES: ZoningType[] = [
     minpakuStatus: "conditional",
     ryokanStatus: "conditional",
     minpakuDetail:
-      "住宅宿泊事業法に基づく届出制で営業可能。旅館業法も条件付きで可能な場合あり。自治体条例による制限確認要。",
+      "住宅宿泊事業法に基づく届出制で営業可能（年間180日以内）。旅館業法も条件付きで可能な場合あり。自治体条例による制限の確認が必要。",
     color: "#CCE49A",
     mainUse: "マンション、中規模店舗、事務所",
   },

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { geocodeAddress } from '@/lib/geocoding';
 import { ZONING_TYPES, getStatusLabel } from '@/lib/zoning-data';
-import { findMunicipality } from '@/lib/municipality-data';
+import { findMunicipality, MUNICIPALITY_DATA_LAST_VERIFIED_AT } from '@/lib/municipality-data';
 import { verifySessionToken, getUsageLimit, COOKIE_NAME, type SessionPayload } from '@/lib/auth';
 import { getUsageFromCookie, incrementUsage } from '@/lib/usage';
 
@@ -29,6 +29,10 @@ export interface CheckResult {
   municipality: {
     found: boolean;
     info: ReturnType<typeof findMunicipality>;
+  };
+  /** データの最終確認情報 */
+  dataMeta: {
+    municipalityLastVerifiedAt: string;
   };
   /** 免責事項 */
   disclaimer: string;
@@ -68,7 +72,7 @@ export async function POST(request: NextRequest) {
         ? session.planTier === 'light'
           ? '今月のライトプラン利用上限（30回）に達しました。プレミアムプランにアップグレードすると無制限でご利用いただけます。'
           : '利用上限に達しました。'
-        : '今月の無料利用回数（3回）に達しました。あおサロンAI会員になると最大無制限でご利用いただけます。';
+        : '今月の無料利用回数（3回）に達しました。あおサロンAI会員になると無制限でご利用いただけます。';
 
       return NextResponse.json(
         {
@@ -137,6 +141,9 @@ export async function POST(request: NextRequest) {
       municipality: {
         found: !!municipalityInfo,
         info: municipalityInfo,
+      },
+      dataMeta: {
+        municipalityLastVerifiedAt: MUNICIPALITY_DATA_LAST_VERIFIED_AT,
       },
       disclaimer:
         '⚠️ 本ツールの判定結果は参考情報です。正確な用途地域の確認は、各自治体の都市計画課または用途地域マップ（外部リンク）をご利用ください。民泊営業の最終判断は、必ず管轄の保健所・自治体にご確認ください。',

@@ -1,5 +1,6 @@
 import styles from './guide.module.css';
 import { ZONING_TYPES, getStatusLabel, getStatusColor } from '@/lib/zoning-data';
+import { MUNICIPALITY_DATA_LAST_VERIFIED_AT } from '@/lib/municipality-data';
 
 export default function GuidePage() {
   return (
@@ -146,6 +147,9 @@ export default function GuidePage() {
             国土数値情報ダウンロードサイト →
           </a>
         </div>
+        <p style={{ marginTop: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>
+          データ最終確認日: {MUNICIPALITY_DATA_LAST_VERIFIED_AT}
+        </p>
       </div>
 
       {/* CTA */}

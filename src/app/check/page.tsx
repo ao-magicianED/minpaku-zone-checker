@@ -385,6 +385,12 @@ export default function CheckPage() {
                     {result.municipality.info.contact}
                   </span>
                 </div>
+                <div className={styles.infoItem}>
+                  <span className={styles.infoLabel}>データ最終確認日</span>
+                  <span className={styles.infoValue}>
+                    {result.dataMeta.municipalityLastVerifiedAt}
+                  </span>
+                </div>
               </div>
               <a
                 href={result.municipality.info.guidelineUrl}
@@ -403,6 +409,9 @@ export default function CheckPage() {
               <p style={{ color: 'var(--text-secondary)' }}>
                 この自治体の条例データはまだ収録されていません。
                 下記リンクから国土交通省の民泊ポータルサイトで確認できます。
+              </p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '8px' }}>
+                データ最終確認日: {result.dataMeta.municipalityLastVerifiedAt}
               </p>
               <a
                 href="https://www.mlit.go.jp/kankocho/minpaku/"
