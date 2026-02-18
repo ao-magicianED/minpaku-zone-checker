@@ -414,3 +414,78 @@ a:hover {
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
 }
+
+/* === 印刷用スタイル === */
+@media print {
+  /* 不要な要素を非表示 */
+  .nav,
+  .footer,
+  .no-print,
+  form,
+  .hero-bg,
+  .spinner,
+  button:not(.no-print button), /* 印刷ボタン自体もno-printで消えるが念のため */
+  a[href^="https://aosalonai.com"] /* 入会リンクなど */
+  {
+    display: none !important;
+  }
+
+  /* 印刷ヘッダーを表示 */
+  .print-header {
+    display: block !important;
+  }
+
+  /* レイアウト調整 */
+  body {
+    background: white;
+    color: black;
+    font-size: 12pt;
+  }
+
+  .container {
+    padding: 0;
+    max-width: 100%;
+  }
+
+  /* カードのスタイルを印刷向けに簡素化 */
+  .glass-card {
+    background: none;
+    border: 1px solid #ccc;
+    box-shadow: none;
+    backdrop-filter: none;
+    margin-bottom: 20px;
+    break-inside: avoid; /* 途中で切れないようにする */
+  }
+
+  /* 地図のスタイル */
+  .leaflet-container {
+    border: 1px solid #999;
+  }
+
+  /* 文字色の調整 */
+  p, h1, h2, h3, li, span, div {
+    color: black !important;
+    text-shadow: none !important;
+  }
+
+  /* バッジの調整 */
+  .badge {
+    border: 1px solid #000;
+    background: none !important;
+    color: #000 !important;
+  }
+
+  /* 用途地域カード */
+  button[class*="zoningCard"] {
+    break-inside: avoid;
+    border: 1px solid #ccc;
+  }
+
+  /* 用途地域詳細のみ表示し、一覧のボタン群は隠す（もし必要なら） */
+  /* 今回はすべて表示するが、レイアウトを縦並びなどにする */
+  
+  /* リンクURLの表示を抑制 */
+  a[href]:after {
+    content: none !important;
+  }
+}

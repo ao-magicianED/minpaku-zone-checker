@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import NavAuth from "@/components/NavAuth";
+import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,18 +26,18 @@ export default function RootLayout({
         {/* ナビゲーション */}
         <nav className="nav">
           <div className="container nav-inner">
-            <a href="/" className="nav-logo">
+            <Link href="/" className="nav-logo">
               🏠 <span>民泊用途地域チェッカー</span>
-            </a>
+            </Link>
             <ul className="nav-links">
-              <li><a href="/">ホーム</a></li>
-              <li><a href="/check">住所チェック</a></li>
-              <li><a href="/guide">用途地域ガイド</a></li>
+              <li><Link href="/">ホーム</Link></li>
+              <li><Link href="/check">住所チェック</Link></li>
+              <li><Link href="/guide">用途地域ガイド</Link></li>
               <NavAuth />
               <li>
-                <a href="/check" className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '13px' }}>
+                <Link href="/check" className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '13px' }}>
                   今すぐチェック →
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -48,7 +49,7 @@ export default function RootLayout({
         </main>
 
         {/* フッター */}
-        <footer style={{
+        <footer className="footer" style={{
           padding: '40px 0',
           borderTop: '1px solid var(--border-color)',
           marginTop: '80px',

@@ -77,6 +77,14 @@ export default function CheckPage() {
 
   return (
     <div className={styles.container}>
+      {/* 印刷用ヘッダー（画面上は非表示） */}
+      <div className="print-header" style={{ display: 'none', marginBottom: '20px' }}>
+        <h1 style={{ fontSize: '24px', marginBottom: '8px', color: '#000' }}>民泊用途地域チェッカー 判定結果レポート</h1>
+        <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+          判定日時: {new Date().toLocaleDateString('ja-JP')} {new Date().toLocaleTimeString('ja-JP')}
+        </p>
+      </div>
+
       {/* 検索フォーム */}
       <section className={styles.searchSection}>
         <h1 className={styles.title}>住所で民泊の可否をチェック</h1>
@@ -226,6 +234,17 @@ export default function CheckPage() {
       {/* 結果表示 */}
       {result && (
         <div className={styles.results}>
+          {/* 印刷/PDF保存ボタン */}
+          <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+            <button
+              onClick={() => window.print()}
+              className="btn btn-secondary"
+              style={{ gap: '8px' }}
+            >
+              🖨️ 結果を印刷 / PDF保存
+            </button>
+          </div>
+
           {/* 地図 */}
           <section className={`glass-card ${styles.mapSection}`}>
             <h2 className={styles.sectionTitle}>📍 位置情報</h2>
