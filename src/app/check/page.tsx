@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import styles from './check.module.css';
 import { ZONING_TYPES, getStatusLabel, getStatusColor } from '@/lib/zoning-data';
@@ -22,6 +23,20 @@ export default function CheckPage() {
   const [result, setResult] = useState<CheckResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedZoning, setSelectedZoning] = useState<string | null>(null);
+  const [usageLimitReached, setUsageLimitReached] = useState(false);
+  const [usageInfo, setUsageInfo] = useState<{ current: number; limit: number; planTier: string } | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated) {
+          setIsLoggedIn(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -31,6 +46,7 @@ export default function CheckPage() {
     setError(null);
     setResult(null);
     setSelectedZoning(null);
+    setUsageLimitReached(false);
 
     try {
       const res = await fetch('/api/check', {
@@ -42,11 +58,16 @@ export default function CheckPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (res.status === 429 && data.usageLimitReached) {
+          setUsageLimitReached(true);
+          if (data.usage) setUsageInfo(data.usage);
+        }
         setError(data.error || '判定に失敗しました');
         return;
       }
 
       setResult(data);
+      if (data.usage) setUsageInfo(data.usage);
     } catch {
       setError('通信エラーが発生しました。もう一度お試しください。');
     } finally {
@@ -112,10 +133,93 @@ export default function CheckPage() {
         </div>
       </section>
 
+      {/* 利用回数バナー */}
+      {usageInfo && !usageLimitReached && (
+        <div style={{
+          maxWidth: '800px',
+          margin: '0 auto 16px',
+          padding: '10px 20px',
+          background: 'rgba(99, 102, 241, 0.08)',
+          border: '1px solid rgba(99, 102, 241, 0.2)',
+          borderRadius: 'var(--radius-md)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '13px',
+          color: 'var(--text-secondary)',
+        }}>
+          <span>
+            📊 今月の利用: <strong style={{ color: 'var(--text-primary)' }}>{usageInfo.current}</strong>
+            {usageInfo.limit > 0 ? ` / ${usageInfo.limit}回` : ' / 無制限'}
+          </span>
+          {!isLoggedIn && (
+            <Link href="/login" style={{ color: 'var(--primary-light)', fontSize: '12px' }}>
+              ログインで上限UP →
+            </Link>
+          )}
+        </div>
+      )}
+
       {/* エラー表示 */}
-      {error && (
+      {error && !usageLimitReached && (
         <div className={styles.errorBox}>
           <span>❌</span> {error}
+        </div>
+      )}
+
+      {/* 利用制限到達時の案内 */}
+      {usageLimitReached && (
+        <div style={{
+          maxWidth: '600px',
+          margin: '0 auto 32px',
+          padding: '32px',
+          background: 'var(--bg-glass)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          borderRadius: 'var(--radius-lg)',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔒</div>
+          <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px', fontSize: '1.2rem' }}>
+            今月の利用回数に達しました
+          </h3>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem', lineHeight: 1.6 }}>
+            {error}
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {!isLoggedIn && (
+              <Link
+                href="/login"
+                style={{
+                  padding: '12px 24px',
+                  background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))',
+                  color: 'white',
+                  borderRadius: 'var(--radius-md)',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                }}
+              >
+                🔑 ログインする
+              </Link>
+            )}
+            <a
+              href="https://aosalonai.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                padding: '12px 24px',
+                background: 'rgba(245, 158, 11, 0.15)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                color: '#f59e0b',
+                borderRadius: 'var(--radius-md)',
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+              }}
+            >
+              🌟 あおサロンAIに入会する
+            </a>
+          </div>
         </div>
       )}
 

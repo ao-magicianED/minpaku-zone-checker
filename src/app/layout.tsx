@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import NavAuth from "@/components/NavAuth";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,6 +32,7 @@ export default function RootLayout({
               <li><a href="/">ホーム</a></li>
               <li><a href="/check">住所チェック</a></li>
               <li><a href="/guide">用途地域ガイド</a></li>
+              <NavAuth />
               <li>
                 <a href="/check" className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '13px' }}>
                   今すぐチェック →
