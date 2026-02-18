@@ -149,17 +149,21 @@ export async function POST(request: NextRequest) {
     // 5. 用途地域マップへの外部リンク生成
     const externalMapUrl = `https://cityzone.mapexpert.net/?ll=${geocodeResult.data.lat},${geocodeResult.data.lon}&z=16`;
 
-    // 6. 利用回数を消費（原子的に更新）
+    // --- 2. 利用回数制限のチェック ---
+    // Supabase の usage_counters テーブルを使用して回数を管理
     const usageResult = await consumeUsage(usageSubject, usageLimit);
+    
     if (!usageResult.allowed) {
+      const isGuest = !session;
+      const limitLabel = isGuest ? 'ゲスト利用上限' : 'プラン上限';
       return createErrorResponse(
-        429,
-        'USAGE_LIMIT',
-        createUsageLimitMessage(session),
+        403, 
+        'USAGE_LIMIT', 
+        `今月の${limitLabel}（${usageResult.limit}回）に達しました。`,
         {
+          limit: usageResult.limit,
           current: usageResult.current,
-          limit: toUsageLimitValue(usageLimit),
-          planTier: session?.planTier || 'guest',
+          planTier: session?.planTier || 'guest'
         }
       );
     }
