@@ -22,6 +22,10 @@ export interface MunicipalityInfo {
   notes: string;
   /** 問い合わせ先 */
   contact: string;
+  /** データオーナー */
+  owner: string;
+  /** 最終確認者 */
+  lastCheckedBy: string;
 }
 
 /**
@@ -29,8 +33,10 @@ export interface MunicipalityInfo {
  * 最新情報は各自治体サイトで確認してください。
  */
 export const MUNICIPALITY_DATA_LAST_VERIFIED_AT = '2026-02-18';
+const DEFAULT_DATA_OWNER = 'あおサロンAI 運営';
+const DEFAULT_LAST_CHECKED_BY = 'codex';
 
-export const MUNICIPALITY_DATA: MunicipalityInfo[] = [
+const BASE_MUNICIPALITY_DATA: Array<Omit<MunicipalityInfo, 'owner' | 'lastCheckedBy'>> = [
   // 東京都
   {
     prefecture: '東京都',
@@ -119,10 +125,10 @@ export const MUNICIPALITY_DATA: MunicipalityInfo[] = [
     maxDays: 180,
     hasAreaRestriction: false,
     areaRestrictionDetail: '特段の区域制限なし（比較的緩やか）',
-    submissionTo: '福岡市 保健福祉局',
+    submissionTo: '福岡市 保健医療局 生活衛生課',
     guidelineUrl: 'https://www.city.fukuoka.lg.jp/hofuku/hokensho/kurashinoeisei/jigyosya/ryokan/minpakusa-bisuwookangaenokatahe.html',
     notes: 'アジアからのインバウンド需要が高い。天神・博多エリアが人気。比較的規制が緩やか。',
-    contact: '福岡県 生活衛生課（TEL: 092-643-3279）',
+    contact: '福岡市 保健医療局生活衛生課（TEL: 要確認）',
   },
   // 沖縄県
   {
@@ -149,6 +155,12 @@ export const MUNICIPALITY_DATA: MunicipalityInfo[] = [
     contact: '横浜市 医療局健康安全部生活衛生課（TEL: 045-671-2447）',
   },
 ];
+
+export const MUNICIPALITY_DATA: MunicipalityInfo[] = BASE_MUNICIPALITY_DATA.map((item) => ({
+  ...item,
+  owner: DEFAULT_DATA_OWNER,
+  lastCheckedBy: DEFAULT_LAST_CHECKED_BY,
+}));
 
 /**
  * 都道府県・市区町村から自治体情報を検索

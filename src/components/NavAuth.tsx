@@ -71,7 +71,7 @@ export default function NavAuth() {
   }
 
   const planLabel = PLAN_LABELS[member.planTier] || member.planTier;
-  const isActive = ['active', 'trialing', 'past_due'].includes(member.subscriptionStatus);
+  const isActive = ['active', 'trialing'].includes(member.subscriptionStatus);
 
   return (
     <li style={{ position: 'relative' }}>

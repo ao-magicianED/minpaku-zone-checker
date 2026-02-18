@@ -7,6 +7,30 @@ import styles from './check.module.css';
 import { ZONING_TYPES, getStatusLabel, getStatusColor } from '@/lib/zoning-data';
 import type { CheckResult } from '@/app/api/check/route';
 
+type CheckErrorCode =
+  | 'INVALID_INPUT'
+  | 'USAGE_LIMIT'
+  | 'GEOCODE_NOT_FOUND'
+  | 'GEOCODE_UPSTREAM'
+  | 'INTERNAL';
+
+function getErrorMessageFromCode(errorCode: CheckErrorCode | null, fallback: string): string {
+  switch (errorCode) {
+    case 'INVALID_INPUT':
+      return '住所を入力してください。';
+    case 'USAGE_LIMIT':
+      return fallback;
+    case 'GEOCODE_NOT_FOUND':
+      return '住所が見つかりませんでした。丁目・番地まで含めて入力してください。';
+    case 'GEOCODE_UPSTREAM':
+      return '住所検索サーバーが混み合っています。少し時間をおいて再度お試しください。';
+    case 'INTERNAL':
+      return 'サーバーエラーが発生しました。もう一度お試しください。';
+    default:
+      return fallback || '判定に失敗しました';
+  }
+}
+
 // Leaflet はクライアントサイドのみでロード（SSR非対応のため）
 const MapView = dynamic(() => import('@/components/MapView'), {
   ssr: false,
@@ -22,6 +46,7 @@ export default function CheckPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CheckResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<CheckErrorCode | null>(null);
   const [selectedZoning, setSelectedZoning] = useState<string | null>(null);
   const [usageLimitReached, setUsageLimitReached] = useState(false);
   const [usageInfo, setUsageInfo] = useState<{ current: number; limit: number; planTier: string } | null>(null);
@@ -44,6 +69,7 @@ export default function CheckPage() {
 
     setLoading(true);
     setError(null);
+    setErrorCode(null);
     setResult(null);
     setSelectedZoning(null);
     setUsageLimitReached(false);
@@ -58,17 +84,23 @@ export default function CheckPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        const apiErrorCode: CheckErrorCode | null =
+          typeof data.errorCode === 'string' ? (data.errorCode as CheckErrorCode) : null;
+        setErrorCode(apiErrorCode);
+
         if (res.status === 429 && data.usageLimitReached) {
           setUsageLimitReached(true);
           if (data.usage) setUsageInfo(data.usage);
         }
-        setError(data.error || '判定に失敗しました');
+        setError(getErrorMessageFromCode(apiErrorCode, data.error || '判定に失敗しました'));
         return;
       }
 
       setResult(data);
+      setErrorCode(null);
       if (data.usage) setUsageInfo(data.usage);
     } catch {
+      setErrorCode('INTERNAL');
       setError('通信エラーが発生しました。もう一度お試しください。');
     } finally {
       setLoading(false);
@@ -170,7 +202,7 @@ export default function CheckPage() {
 
       {/* エラー表示 */}
       {error && !usageLimitReached && (
-        <div className={styles.errorBox}>
+        <div className={styles.errorBox} data-error-code={errorCode || undefined}>
           <span>❌</span> {error}
         </div>
       )}

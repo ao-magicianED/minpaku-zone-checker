@@ -2,9 +2,11 @@ import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
 const COOKIE_NAME = 'minpaku_checker_session';
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'minpaku-checker-fallback-secret-key-change-me'
-);
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret) {
+  throw new Error('JWT_SECRET is required');
+}
+const JWT_SECRET = new TextEncoder().encode(jwtSecret);
 
 export interface SessionPayload {
   memberId: string;
@@ -12,6 +14,14 @@ export interface SessionPayload {
   name: string | null;
   planTier: 'light' | 'premium' | 'none';
   subscriptionStatus: 'active' | 'canceled' | 'past_due' | 'trialing' | 'none';
+}
+
+function isPlanTier(value: unknown): value is SessionPayload['planTier'] {
+  return value === 'light' || value === 'premium' || value === 'none';
+}
+
+function isSubscriptionStatus(value: unknown): value is SessionPayload['subscriptionStatus'] {
+  return value === 'active' || value === 'canceled' || value === 'past_due' || value === 'trialing' || value === 'none';
 }
 
 /**
@@ -31,12 +41,25 @@ export async function createSessionToken(payload: SessionPayload): Promise<strin
 export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
+
+    const memberId = payload.memberId;
+    const email = payload.email;
+    const planTier = payload.planTier;
+    const subscriptionStatus = payload.subscriptionStatus;
+    const name = payload.name;
+
+    if (typeof memberId !== 'string' || memberId.trim() === '') return null;
+    if (typeof email !== 'string' || email.trim() === '') return null;
+    if (!isPlanTier(planTier)) return null;
+    if (!isSubscriptionStatus(subscriptionStatus)) return null;
+    if (name !== undefined && name !== null && typeof name !== 'string') return null;
+
     return {
-      memberId: payload.memberId as string,
-      email: payload.email as string,
-      name: (payload.name as string) || null,
-      planTier: (payload.planTier as SessionPayload['planTier']) || 'none',
-      subscriptionStatus: (payload.subscriptionStatus as SessionPayload['subscriptionStatus']) || 'none',
+      memberId,
+      email,
+      name: typeof name === 'string' ? name : null,
+      planTier,
+      subscriptionStatus,
     };
   } catch {
     return null;
@@ -93,8 +116,8 @@ export function clearSessionCookie(): string {
  * 有料会員かどうかを判定
  */
 export function isActiveMember(session: SessionPayload): boolean {
-  const activeStatuses = ['active', 'trialing', 'past_due'];
-  const activeTiers = ['light', 'premium'];
+  const activeStatuses: SessionPayload['subscriptionStatus'][] = ['active', 'trialing'];
+  const activeTiers: SessionPayload['planTier'][] = ['light', 'premium'];
   return activeStatuses.includes(session.subscriptionStatus) && activeTiers.includes(session.planTier);
 }
 

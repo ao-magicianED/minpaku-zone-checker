@@ -6,7 +6,9 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:urls": "node scripts/check-municipality-urls.mjs",
+    "test": "node scripts/check-municipality-urls.mjs --no-write"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.96.0",

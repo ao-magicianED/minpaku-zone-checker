@@ -3,6 +3,9 @@
  * OpenStreetMap Nominatim APIを使用（無料・APIキー不要）
  */
 
+export type GeocodeSource = 'nominatim' | 'mlit';
+export type GeocodeFailureReason = 'invalid' | 'not_found' | 'upstream_error';
+
 /** ジオコーディング結果 */
 export interface GeocodingResult {
   /** 緯度 */
@@ -17,7 +20,28 @@ export interface GeocodingResult {
   city: string;
   /** 住所タイプ */
   type: string;
+  /** 住所検索ソース */
+  source: GeocodeSource;
+  /** リトライ回数（初回成功時は 0） */
+  retryCount: number;
+  /** 検索に使用した住所（最終） */
+  normalizedAddress: string;
 }
+
+export type GeocodeResult =
+  | {
+      ok: true;
+      data: GeocodingResult;
+      attemptedAddresses: string[];
+    }
+  | {
+      ok: false;
+      reason: GeocodeFailureReason;
+      message: string;
+      status?: number;
+      retryCount: number;
+      attemptedAddresses: string[];
+    };
 
 /** Nominatim APIのレスポンス型 */
 interface NominatimResponse {
@@ -37,97 +61,161 @@ interface NominatimResponse {
   type: string;
 }
 
-/**
- * 住所を緯度経度に変換（ジオコーディング）
- * Nominatim 利用ポリシー: 1秒/リクエスト、1日2000回以下
- * 住所が見つからない場合、詳細部分（番地や部屋番号）を削除して再試行するフォールバック機能付き
- */
-export async function geocodeAddress(address: string): Promise<GeocodingResult | null> {
-  let searchAddress = address;
-  let attempts = 0;
-  // 最大再試行回数（例: 3-13-10-202 -> 3-13-10 -> 3-13 -> 3 -> 終了）
-  const maxAttempts = 5;
+const MAX_ATTEMPTS = 3;
+const NOMINATIM_TIMEOUT_MS = 6000;
 
-  while (attempts < maxAttempts) {
-    try {
-      const encodedAddress = encodeURIComponent(searchAddress);
-      const url = `https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&addressdetails=1&limit=1&countrycodes=jp`;
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-      // API負荷軽減のため、少し待機（再試行時のみ）
-      if (attempts > 0) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+function normalizeInputAddress(address: string): string {
+  return address.trim().replace(/\s+/g, ' ');
+}
 
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'MinpakuZoneChecker/1.0 (https://github.com/ao-magicianED/minpaku-zone-checker)',
-          'Accept-Language': 'ja',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Nominatim API エラー: ${response.status}`);
-      }
-
-      const data: NominatimResponse[] = await response.json();
-
-      if (data.length > 0) {
-        const result = data[0];
-        const addr = result.address;
-
-        return {
-          lat: parseFloat(result.lat),
-          lon: parseFloat(result.lon),
-          displayName: result.display_name,
-          prefecture: addr.state || addr.province || '',
-          city: addr.city || addr.town || addr.village || addr.county || '',
-          type: result.type,
-        };
-      }
-
-      // 見つからなかった場合、住所を短縮して再試行
-      const nextAddress = truncateAddress(searchAddress);
-      
-      // 短縮しても変わらない（これ以上短くできない）場合は諦める
-      if (nextAddress === searchAddress) {
-        break;
-      }
-
-      console.log(`住所が見つかりませんでした: "${searchAddress}" -> 再試行: "${nextAddress}"`);
-      searchAddress = nextAddress;
-      attempts++;
-
-    } catch (error) {
-      console.error('ジオコーディングエラー:', error);
-      return null;
-    }
-  }
-
-  return null;
+function hasCityLevelAddress(address: string): boolean {
+  return /(都|道|府|県).*(市|区|町|村)/.test(address);
 }
 
 /**
  * 住所の末尾にある「-数字」「番地」「号」などを削除して親の住所を返す
  */
 function truncateAddress(address: string): string {
-  // パターン1: 末尾の "数字" (全角半角) を削除 (例: "寿3" -> "寿")
-  // パターン2: 末尾の "-数字" or "ー数字" を削除 (例: "3-13" -> "3")
-  // パターン3: 末尾の "丁目" "番" "号" を削除
-  
-  // 単純な実装: 末尾の数字またはハイフン+数字を削除
-  // 例: "寿3-13-10" -> "寿3-13" -> "寿3" -> "寿"
-  
-  // 正規表現: (ハイフンorスペース)? + 数字 + 文字列末尾
-  // [-－ー\s]*[0-9０-９]+$
-  
-  const newAddress = address.replace(/[-－ー\s]*[0-9０-９]+$/, '');
-  
-  // 何も変わらなかった場合（数字で終わっていない場合）、"号" "番" "丁目" などを消してみる
-  if (newAddress === address) {
-    return address.replace(/(号|番|丁目|階|号室)$/, '');
+  const trimmed = address.trim();
+  const numberRemoved = trimmed.replace(/[-－ー\s]*[0-9０-９]+$/, '').trim();
+  if (numberRemoved !== trimmed) {
+    return numberRemoved;
   }
-  
-  return newAddress;
+  return trimmed.replace(/(号室|号|番|丁目|階)$/, '').trim();
+}
+
+/**
+ * 住所を緯度経度に変換（ジオコーディング）
+ * Nominatim 利用ポリシー: 1秒/リクエスト、1日2000回以下
+ */
+export async function geocodeAddress(address: string): Promise<GeocodeResult> {
+  const normalizedInput = normalizeInputAddress(address);
+  if (!normalizedInput) {
+    return {
+      ok: false,
+      reason: 'invalid',
+      message: '住所を入力してください。',
+      retryCount: 0,
+      attemptedAddresses: [],
+    };
+  }
+
+  let searchAddress = normalizedInput;
+  const attemptedAddresses: string[] = [];
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    attemptedAddresses.push(searchAddress);
+
+    if (attempt > 0) {
+      await delay(1000);
+    }
+
+    const encodedAddress = encodeURIComponent(searchAddress);
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&addressdetails=1&limit=1&countrycodes=jp`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), NOMINATIM_TIMEOUT_MS);
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        headers: {
+          'User-Agent': 'MinpakuZoneChecker/1.0 (https://github.com/ao-magicianED/minpaku-zone-checker)',
+          'Accept-Language': 'ja',
+        },
+        signal: controller.signal,
+      });
+    } catch (error) {
+      clearTimeout(timeoutId);
+      const isTimeout = error instanceof Error && error.name === 'AbortError';
+      return {
+        ok: false,
+        reason: 'upstream_error',
+        message: isTimeout
+          ? '住所検索サーバーがタイムアウトしました。'
+          : '住所検索サーバーに接続できませんでした。',
+        retryCount: attempt,
+        attemptedAddresses,
+      };
+    }
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        reason: 'upstream_error',
+        message: `Nominatim API エラー: ${response.status}`,
+        status: response.status,
+        retryCount: attempt,
+        attemptedAddresses,
+      };
+    }
+
+    let data: NominatimResponse[];
+    try {
+      data = (await response.json()) as NominatimResponse[];
+    } catch {
+      return {
+        ok: false,
+        reason: 'upstream_error',
+        message: '住所検索サーバーの応答形式が不正です。',
+        retryCount: attempt,
+        attemptedAddresses,
+      };
+    }
+
+    if (Array.isArray(data) && data.length > 0) {
+      const result = data[0];
+      const addr = result.address || {};
+      const lat = Number.parseFloat(result.lat);
+      const lon = Number.parseFloat(result.lon);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        return {
+          ok: false,
+          reason: 'upstream_error',
+          message: '住所検索サーバーの座標データが不正です。',
+          retryCount: attempt,
+          attemptedAddresses,
+        };
+      }
+
+      return {
+        ok: true,
+        data: {
+          lat,
+          lon,
+          displayName: result.display_name,
+          prefecture: addr.state || addr.province || '',
+          city: addr.city || addr.town || addr.village || addr.county || '',
+          type: result.type,
+          source: 'nominatim',
+          retryCount: attempt,
+          normalizedAddress: searchAddress,
+        },
+        attemptedAddresses,
+      };
+    }
+
+    const nextAddress = truncateAddress(searchAddress);
+    if (nextAddress === searchAddress || !hasCityLevelAddress(nextAddress)) {
+      break;
+    }
+
+    console.log(`住所が見つかりませんでした: "${searchAddress}" -> 再試行: "${nextAddress}"`);
+    searchAddress = nextAddress;
+  }
+
+  return {
+    ok: false,
+    reason: 'not_found',
+    message: '住所が見つかりませんでした。',
+    retryCount: Math.max(0, attemptedAddresses.length - 1),
+    attemptedAddresses,
+  };
 }
 
 /**
@@ -148,16 +236,24 @@ export async function reverseGeocode(lat: number, lon: number): Promise<Geocodin
       throw new Error(`Nominatim 逆ジオコーディングエラー: ${response.status}`);
     }
 
-    const data: NominatimResponse = await response.json();
-    const addr = data.address;
+    const data = (await response.json()) as NominatimResponse;
+    const addr = data.address || {};
+    const parsedLat = Number.parseFloat(data.lat);
+    const parsedLon = Number.parseFloat(data.lon);
+    if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLon)) {
+      return null;
+    }
 
     return {
-      lat: parseFloat(data.lat),
-      lon: parseFloat(data.lon),
+      lat: parsedLat,
+      lon: parsedLon,
       displayName: data.display_name,
       prefecture: addr.state || addr.province || '',
       city: addr.city || addr.town || addr.village || addr.county || '',
       type: data.type,
+      source: 'nominatim',
+      retryCount: 0,
+      normalizedAddress: data.display_name,
     };
   } catch (error) {
     console.error('逆ジオコーディングエラー:', error);
