@@ -132,85 +132,105 @@
   color: var(--text-secondary);
 }
 
-/* === 用途地域マップリンク === */
-.zoningMapSection {
+/* === 用途地域判定結果カード === */
+.zoningResultSection {
   padding: 28px;
+}
+
+.zoningResultCard {
+  padding: 32px;
   text-align: center;
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
 }
 
-.zoningNote {
-  color: var(--text-secondary);
-  font-size: 14px;
-  margin-bottom: 20px;
-  line-height: 1.7;
+.zoningResultCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.08;
+  z-index: 0;
 }
 
-.mapLink {
-  display: inline-flex;
+.zoningResultCard > * {
+  position: relative;
+  z-index: 1;
 }
 
-/* === 用途地域一覧 === */
-.zoningListSection {
-  padding: 28px;
-}
-
-.zoningGrid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.zoningCard {
-  width: 100%;
-  text-align: left;
-  padding: 14px 20px;
-  background: var(--bg-glass);
-  border: 1px solid var(--border-color);
-  border-left: 4px solid;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  font-family: var(--font-sans);
-  color: var(--text-primary);
-  transition: all var(--transition-fast);
-}
-
-.zoningCard:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.zoningCardActive {
-  background: rgba(99, 102, 241, 0.08) !important;
-  border-color: var(--border-glow);
-}
-
-.zoningCardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+.zoningStatusIcon {
+  font-size: 3rem;
+  margin-bottom: 12px;
 }
 
 .zoningName {
-  font-weight: 600;
-  font-size: 14px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 8px;
 }
 
-.zoningDetail {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border-color);
-  font-size: 13px;
+.zoningDescription {
   color: var(--text-secondary);
-  line-height: 1.7;
+  font-size: 14px;
+  margin-bottom: 20px;
+  line-height: 1.6;
 }
 
-.zoningExplanation {
-  padding: 12px 16px;
+.zoningStatusGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.zoningStatusItem {
+  padding: 16px;
+  border-radius: var(--radius-md);
   background: var(--bg-glass);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.zoningStatusLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.zoningStatusValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.zoningDetailText {
+  padding: 16px 20px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   font-size: 13px;
   line-height: 1.8;
+  color: var(--text-secondary);
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.zoningExtraInfo {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.zoningFallback {
+  padding: 24px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 /* === 自治体情報 === */
@@ -249,6 +269,34 @@
   margin-top: 8px;
 }
 
+/* === 販売動線CTA === */
+.ctaSection {
+  padding: 32px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.08));
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.ctaTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.ctaDescription {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.ctaButtons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 /* === 免責事項 === */
 .disclaimer {
   padding: 16px 20px;
@@ -270,9 +318,12 @@
     width: 100%;
   }
 
-  .zoningCardHeader {
+  .zoningStatusGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .zoningExtraInfo {
     flex-direction: column;
-    align-items: flex-start;
     gap: 8px;
   }
 
@@ -283,5 +334,10 @@
 
   .infoLabel {
     min-width: unset;
+  }
+
+  .ctaButtons {
+    flex-direction: column;
+    align-items: center;
   }
 }

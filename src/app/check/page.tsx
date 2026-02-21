@@ -1,35 +1,10 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
-import Link from 'next/link';
+import { useState, FormEvent } from 'react';
 import dynamic from 'next/dynamic';
 import styles from './check.module.css';
-import { ZONING_TYPES, getStatusLabel, getStatusColor } from '@/lib/zoning-data';
+import { getStatusColor } from '@/lib/zoning-data';
 import type { CheckResult } from '@/app/api/check/route';
-
-type CheckErrorCode =
-  | 'INVALID_INPUT'
-  | 'USAGE_LIMIT'
-  | 'GEOCODE_NOT_FOUND'
-  | 'GEOCODE_UPSTREAM'
-  | 'INTERNAL';
-
-function getErrorMessageFromCode(errorCode: CheckErrorCode | null, fallback: string): string {
-  switch (errorCode) {
-    case 'INVALID_INPUT':
-      return '住所を入力してください。';
-    case 'USAGE_LIMIT':
-      return fallback;
-    case 'GEOCODE_NOT_FOUND':
-      return '住所が見つかりませんでした。丁目・番地まで含めて入力してください。';
-    case 'GEOCODE_UPSTREAM':
-      return '住所検索サーバーが混み合っています。少し時間をおいて再度お試しください。';
-    case 'INTERNAL':
-      return 'サーバーエラーが発生しました。もう一度お試しください。';
-    default:
-      return fallback || '判定に失敗しました';
-  }
-}
 
 // Leaflet はクライアントサイドのみでロード（SSR非対応のため）
 const MapView = dynamic(() => import('@/components/MapView'), {
@@ -41,27 +16,19 @@ const MapView = dynamic(() => import('@/components/MapView'), {
   ),
 });
 
+function getStatusIcon(status: 'allowed' | 'conditional' | 'restricted'): string {
+  switch (status) {
+    case 'allowed': return '✅';
+    case 'conditional': return '⚠️';
+    case 'restricted': return '❌';
+  }
+}
+
 export default function CheckPage() {
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CheckResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [errorCode, setErrorCode] = useState<CheckErrorCode | null>(null);
-  const [selectedZoning, setSelectedZoning] = useState<string | null>(null);
-  const [usageLimitReached, setUsageLimitReached] = useState(false);
-  const [usageInfo, setUsageInfo] = useState<{ current: number; limit: number; planTier: string } | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated) {
-          setIsLoggedIn(true);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -69,10 +36,7 @@ export default function CheckPage() {
 
     setLoading(true);
     setError(null);
-    setErrorCode(null);
     setResult(null);
-    setSelectedZoning(null);
-    setUsageLimitReached(false);
 
     try {
       const res = await fetch('/api/check', {
@@ -84,23 +48,12 @@ export default function CheckPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        const apiErrorCode: CheckErrorCode | null =
-          typeof data.errorCode === 'string' ? (data.errorCode as CheckErrorCode) : null;
-        setErrorCode(apiErrorCode);
-
-        if (res.status === 429 && data.usageLimitReached) {
-          setUsageLimitReached(true);
-          if (data.usage) setUsageInfo(data.usage);
-        }
-        setError(getErrorMessageFromCode(apiErrorCode, data.error || '判定に失敗しました'));
+        setError(data.error || '判定に失敗しました');
         return;
       }
 
       setResult(data);
-      setErrorCode(null);
-      if (data.usage) setUsageInfo(data.usage);
     } catch {
-      setErrorCode('INTERNAL');
       setError('通信エラーが発生しました。もう一度お試しください。');
     } finally {
       setLoading(false);
@@ -121,7 +74,7 @@ export default function CheckPage() {
       <section className={styles.searchSection}>
         <h1 className={styles.title}>住所で民泊の可否をチェック</h1>
         <p className={styles.subtitle}>
-          検討中の物件住所を入力してください。用途地域と民泊可否を判定します。
+          物件の住所を入力するだけで、用途地域と民泊可否を自動判定します。
         </p>
 
         <form onSubmit={handleSubmit} className={styles.searchForm}>
@@ -173,93 +126,10 @@ export default function CheckPage() {
         </div>
       </section>
 
-      {/* 利用回数バナー */}
-      {usageInfo && !usageLimitReached && (
-        <div style={{
-          maxWidth: '800px',
-          margin: '0 auto 16px',
-          padding: '10px 20px',
-          background: 'rgba(99, 102, 241, 0.08)',
-          border: '1px solid rgba(99, 102, 241, 0.2)',
-          borderRadius: 'var(--radius-md)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontSize: '13px',
-          color: 'var(--text-secondary)',
-        }}>
-          <span>
-            📊 今月の利用: <strong style={{ color: 'var(--text-primary)' }}>{usageInfo.current}</strong>
-            {usageInfo.limit > 0 ? ` / ${usageInfo.limit}回` : ' / 無制限'}
-          </span>
-          {!isLoggedIn && (
-            <Link href="/login" style={{ color: 'var(--primary-light)', fontSize: '12px' }}>
-              ログインで上限UP →
-            </Link>
-          )}
-        </div>
-      )}
-
       {/* エラー表示 */}
-      {error && !usageLimitReached && (
-        <div className={styles.errorBox} data-error-code={errorCode || undefined}>
+      {error && (
+        <div className={styles.errorBox}>
           <span>❌</span> {error}
-        </div>
-      )}
-
-      {/* 利用制限到達時の案内 */}
-      {usageLimitReached && (
-        <div style={{
-          maxWidth: '600px',
-          margin: '0 auto 32px',
-          padding: '32px',
-          background: 'var(--bg-glass)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          borderRadius: 'var(--radius-lg)',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🔒</div>
-          <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px', fontSize: '1.2rem' }}>
-            今月の利用回数に達しました
-          </h3>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem', lineHeight: 1.6 }}>
-            {error}
-          </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            {!isLoggedIn && (
-              <Link
-                href="/login"
-                style={{
-                  padding: '12px 24px',
-                  background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))',
-                  color: 'white',
-                  borderRadius: 'var(--radius-md)',
-                  textDecoration: 'none',
-                  fontWeight: 600,
-                  fontSize: '0.95rem',
-                }}
-              >
-                🔑 ログインする
-              </Link>
-            )}
-            <a
-              href="https://aosalonai.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                padding: '12px 24px',
-                background: 'rgba(245, 158, 11, 0.15)',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                color: '#f59e0b',
-                borderRadius: 'var(--radius-md)',
-                textDecoration: 'none',
-                fontWeight: 600,
-                fontSize: '0.95rem',
-              }}
-            >
-              🌟 あおサロンAIに入会する
-            </a>
-          </div>
         </div>
       )}
 
@@ -267,7 +137,7 @@ export default function CheckPage() {
       {result && (
         <div className={styles.results}>
           {/* 印刷/PDF保存ボタン */}
-          <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+          <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button
               onClick={() => window.print()}
               className="btn btn-secondary"
@@ -277,7 +147,7 @@ export default function CheckPage() {
             </button>
           </div>
 
-          {/* 地図 */}
+          {/* ステップ1: 地図 */}
           <section className={`glass-card ${styles.mapSection}`}>
             <h2 className={styles.sectionTitle}>📍 位置情報</h2>
             <div className={styles.locationInfo}>
@@ -295,73 +165,103 @@ export default function CheckPage() {
             />
           </section>
 
-          {/* 用途地域マップリンク */}
-          <section className={`glass-card ${styles.zoningMapSection}`}>
-            <h2 className={styles.sectionTitle}>🗺️ 用途地域の確認</h2>
-            <p className={styles.zoningNote}>
-              {result.zoningReference.note}
-            </p>
-            <a
-              href={result.zoningReference.externalMapUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`btn btn-primary ${styles.mapLink}`}
-            >
-              🌐 用途地域マップで確認する（外部サイト）
-            </a>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
-              ※ cityzone.mapexpert.net が開きます。地図上で色分けされた用途地域を確認できます。
-            </p>
-          </section>
+          {/* ステップ2: 用途地域判定結果 */}
+          <section className={`glass-card ${styles.zoningResultSection}`}>
+            <h2 className={styles.sectionTitle}>🗺️ 用途地域の判定結果</h2>
 
-          {/* 用途地域別 民泊ルール一覧 */}
-          <section className={`glass-card ${styles.zoningListSection}`}>
-            <h2 className={styles.sectionTitle}>
-              📋 用途地域が判明したら — 民泊ルール一覧
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '20px', fontSize: '14px' }}>
-              上の外部マップで用途地域を確認したら、下記から該当する地域をクリックしてください。
-            </p>
-            <div className={styles.zoningGrid}>
-              {ZONING_TYPES.map((z) => (
-                <button
-                  key={z.code}
-                  className={`${styles.zoningCard} ${selectedZoning === z.code ? styles.zoningCardActive : ''}`}
-                  onClick={() => setSelectedZoning(selectedZoning === z.code ? null : z.code)}
-                  style={{ borderLeftColor: z.color }}
-                >
-                  <div className={styles.zoningCardHeader}>
-                    <span className={styles.zoningName}>{z.name}</span>
+            {result.zoning.detected && result.zoning.minpakuStatus ? (
+              <div className={styles.zoningResultCard}>
+                <div className={styles.zoningStatusIcon}>
+                  {getStatusIcon(result.zoning.minpakuStatus)}
+                </div>
+                <div className={styles.zoningName} style={{ color: result.zoning.color || 'var(--text-primary)' }}>
+                  {result.zoning.name}
+                </div>
+                <div className={styles.zoningDescription}>
+                  {result.zoning.description}
+                </div>
+
+                {/* 民泊・旅館業法の判定 */}
+                <div className={styles.zoningStatusGrid}>
+                  <div className={styles.zoningStatusItem}>
+                    <span className={styles.zoningStatusLabel}>住宅宿泊事業法（民泊新法）</span>
                     <span
-                      className={`badge ${z.minpakuStatus === 'allowed' ? 'badge-success' : z.minpakuStatus === 'conditional' ? 'badge-warning' : 'badge-danger'}`}
+                      className={styles.zoningStatusValue}
+                      style={{ color: getStatusColor(result.zoning.minpakuStatus) }}
                     >
-                      {getStatusLabel(z.minpakuStatus)}
+                      {getStatusIcon(result.zoning.minpakuStatus)} {result.zoning.minpakuStatusLabel}
                     </span>
                   </div>
-                  {selectedZoning === z.code && (
-                    <div className={styles.zoningDetail}>
-                      <p style={{ marginBottom: '8px' }}><strong>概要:</strong> {z.description}</p>
-                      <p style={{ marginBottom: '8px' }}>
-                        <strong>民泊（住宅宿泊事業法）:</strong>{' '}
-                        <span style={{ color: getStatusColor(z.minpakuStatus) }}>
-                          {getStatusLabel(z.minpakuStatus)}
-                        </span>
-                      </p>
-                      <p style={{ marginBottom: '8px' }}>
-                        <strong>旅館業法（簡易宿所）:</strong>{' '}
-                        <span style={{ color: getStatusColor(z.ryokanStatus) }}>
-                          {getStatusLabel(z.ryokanStatus)}
-                        </span>
-                      </p>
-                      <p className={styles.zoningExplanation}>{z.minpakuDetail}</p>
+                  {result.zoning.ryokanStatus && (
+                    <div className={styles.zoningStatusItem}>
+                      <span className={styles.zoningStatusLabel}>旅館業法（簡易宿所）</span>
+                      <span
+                        className={styles.zoningStatusValue}
+                        style={{ color: getStatusColor(result.zoning.ryokanStatus) }}
+                      >
+                        {getStatusIcon(result.zoning.ryokanStatus)} {result.zoning.ryokanStatusLabel}
+                      </span>
                     </div>
                   )}
-                </button>
-              ))}
-            </div>
+                </div>
+
+                {/* 詳細説明 */}
+                {result.zoning.minpakuDetail && (
+                  <div className={styles.zoningDetailText}>
+                    {result.zoning.minpakuDetail}
+                  </div>
+                )}
+
+                {/* 容積率・建蔽率 */}
+                {(result.zoning.floorAreaRatio || result.zoning.buildingCoverageRatio) && (
+                  <div className={styles.zoningExtraInfo}>
+                    {result.zoning.floorAreaRatio && (
+                      <span>📐 容積率: <strong>{result.zoning.floorAreaRatio}</strong></span>
+                    )}
+                    {result.zoning.buildingCoverageRatio && (
+                      <span>📏 建蔽率: <strong>{result.zoning.buildingCoverageRatio}</strong></span>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className={styles.zoningFallback}>
+                <p style={{ marginBottom: '16px' }}>
+                  この地点の用途地域を自動判定できませんでした。
+                  {result.zoning.rawZoningName && (
+                    <span><br />取得された情報: <strong>{result.zoning.rawZoningName}</strong></span>
+                  )}
+                </p>
+                <a
+                  href={result.zoning.externalMapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary"
+                >
+                  🌐 用途地域マップで確認する（外部サイト）
+                </a>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                  ※ cityzone.mapexpert.net が開きます。地図上で色分けされた用途地域を確認できます。
+                </p>
+              </div>
+            )}
+
+            {/* 外部マップリンク（判定成功時も参考として表示） */}
+            {result.zoning.detected && (
+              <div style={{ marginTop: '16px', textAlign: 'center' }}>
+                <a
+                  href={result.zoning.externalMapUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: '13px', color: 'var(--text-muted)' }}
+                >
+                  🌐 用途地域マップでも確認する →
+                </a>
+              </div>
+            )}
           </section>
 
-          {/* 自治体情報 */}
+          {/* ステップ3: 自治体条例情報 */}
           {result.municipality.found && result.municipality.info && (
             <section className={`glass-card ${styles.municipalitySection}`}>
               <h2 className={styles.sectionTitle}>🏛️ 自治体条例情報</h2>
@@ -456,6 +356,33 @@ export default function CheckPage() {
               </a>
             </section>
           )}
+
+          {/* ステップ4: 販売動線CTA */}
+          <section className={`glass-card ${styles.ctaSection}`}>
+            <div className={styles.ctaTitle}>🎯 もっと詳しく知りたい方へ</div>
+            <p className={styles.ctaDescription}>
+              民泊事業の始め方、収益シミュレーション、申請手続きの詳細など、
+              AIが個別にアドバイスいたします。
+            </p>
+            <div className={styles.ctaButtons}>
+              <a
+                href="https://chatgpt.com/g/g-minpaku"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary btn-large"
+              >
+                🤖 民泊GPTsで相談する
+              </a>
+              <a
+                href="https://note.com/ao_salon_ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary btn-large"
+              >
+                📝 noteで詳細を見る
+              </a>
+            </div>
+          </section>
 
           {/* 免責事項 */}
           <div className={styles.disclaimer}>

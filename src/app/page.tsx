@@ -135,18 +135,19 @@ export default function Home() {
       <section className={styles.cta}>
         <div className="container">
           <div className={`glass-card ${styles.ctaCard}`}>
-            <h2>あおサロンAI会員ですか？</h2>
+            <h2>民泊事業をもっと深く知りたい方へ</h2>
             <p>
-              プレミアムプラン（9,800円/月）会員は、本ツールの基本プラン
-              （1,980円/月相当）が<strong>無料</strong>で無制限に利用可能です。
+              用途地域チェッカーで大まかな可否が分かったら、次のステップへ。
+              <strong>民泊GPTs</strong>があなたの物件に合わせた個別アドバイスを提供します。
             </p>
             <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a href="https://aosalonai.com/pricing" target="_blank" rel="noopener noreferrer"
+              <a href="https://chatgpt.com/g/g-minpaku" target="_blank" rel="noopener noreferrer"
                 className="btn btn-primary btn-large">
-                プラン詳細を見る
+                🤖 民泊GPTsで相談する
               </a>
-              <a href="/check" className="btn btn-secondary btn-large">
-                無料で試す（月10回）
+              <a href="https://note.com/ao_salon_ai" target="_blank" rel="noopener noreferrer"
+                className="btn btn-secondary btn-large">
+                📝 noteで詳細を見る
               </a>
             </div>
           </div>

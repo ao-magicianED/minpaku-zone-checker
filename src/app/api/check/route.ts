@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { geocodeAddress } from '@/lib/geocoding';
-import { ZONING_TYPES, getStatusLabel } from '@/lib/zoning-data';
+import { getStatusLabel } from '@/lib/zoning-data';
 import { findMunicipality, MUNICIPALITY_DATA_LAST_VERIFIED_AT } from '@/lib/municipality-data';
-import { verifySessionToken, getUsageLimit, COOKIE_NAME, type SessionPayload } from '@/lib/auth';
-import { buildUsageSubject, consumeUsage, getCurrentUsageCount } from '@/lib/usage';
+import { getZoningByLatLon, type ZoningLookupResult } from '@/lib/reinfolib';
 
 type CheckErrorCode =
   | 'INVALID_INPUT'
-  | 'USAGE_LIMIT'
   | 'GEOCODE_NOT_FOUND'
   | 'GEOCODE_UPSTREAM'
   | 'INTERNAL';
-
-interface UsageResponse {
-  current: number;
-  limit: number;
-  planTier: string;
-}
 
 /**
  * 判定結果のレスポンス型
@@ -34,11 +26,23 @@ export interface CheckResult {
     source: 'nominatim' | 'mlit';
     retryCount: number;
   };
-  /** 用途地域情報（参考データベースからの推定） */
-  zoningReference: {
-    note: string;
-    allZoningTypes: typeof ZONING_TYPES;
+  /** 用途地域の自動判定結果 */
+  zoning: {
+    detected: boolean;
+    name: string | null;
+    code: string | null;
+    description: string | null;
+    minpakuStatus: 'allowed' | 'conditional' | 'restricted' | null;
+    minpakuStatusLabel: string | null;
+    ryokanStatus: 'allowed' | 'conditional' | 'restricted' | null;
+    ryokanStatusLabel: string | null;
+    minpakuDetail: string | null;
+    color: string | null;
+    floorAreaRatio: string | null;
+    buildingCoverageRatio: string | null;
+    rawZoningName: string | null;
     externalMapUrl: string;
+    source: 'reinfolib';
   };
   /** 自治体情報 */
   municipality: {
@@ -51,72 +55,25 @@ export interface CheckResult {
   };
   /** 免責事項 */
   disclaimer: string;
-  /** 利用状況 */
-  usage?: UsageResponse;
-}
-
-function toUsageLimitValue(limit: number): number {
-  return Number.isFinite(limit) ? limit : -1;
 }
 
 function createErrorResponse(
   status: number,
   errorCode: CheckErrorCode,
-  error: string,
-  usage?: UsageResponse
+  error: string
 ) {
   return NextResponse.json(
-    {
-      errorCode,
-      error,
-      usageLimitReached: errorCode === 'USAGE_LIMIT',
-      usage,
-    },
+    { errorCode, error },
     { status }
   );
 }
 
-function createUsageLimitMessage(session: SessionPayload | null): string {
-  if (!session) {
-    return '今月の無料利用回数（3回）に達しました。あおサロンAI会員になると無制限でご利用いただけます。';
-  }
-  if (session.planTier === 'light') {
-    return '今月のライトプラン利用上限（30回）に達しました。プレミアムプランにアップグレードすると無制限でご利用いただけます。';
-  }
-  return '利用上限に達しました。';
-}
-
 /**
  * POST /api/check
- * 住所を受け取り、ジオコーディング＋用途地域参照＋自治体情報を返す
+ * 住所を受け取り、ジオコーディング＋用途地域自動判定＋自治体情報を返す
  */
 export async function POST(request: NextRequest) {
   try {
-    // 1. セッション確認（任意 — ゲストも利用可）
-    let session: SessionPayload | null = null;
-    const sessionToken = request.cookies.get(COOKIE_NAME)?.value;
-    if (sessionToken) {
-      session = await verifySessionToken(sessionToken);
-    }
-
-    // 2. 利用回数チェック
-    const usageLimit = getUsageLimit(session);
-    const usageSubject = buildUsageSubject(request, session);
-    const currentUsage = await getCurrentUsageCount(usageSubject);
-
-    if (Number.isFinite(usageLimit) && currentUsage >= usageLimit) {
-      return createErrorResponse(
-        429,
-        'USAGE_LIMIT',
-        createUsageLimitMessage(session),
-        {
-          current: currentUsage,
-          limit: toUsageLimitValue(usageLimit),
-          planTier: session?.planTier || 'guest',
-        }
-      );
-    }
-
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     const address = typeof body?.address === 'string' ? body.address.trim() : '';
 
@@ -124,7 +81,7 @@ export async function POST(request: NextRequest) {
       return createErrorResponse(400, 'INVALID_INPUT', '住所を入力してください');
     }
 
-    // 3. ジオコーディング
+    // 1. ジオコーディング（住所 → 緯度経度）
     const geocodeResult = await geocodeAddress(address);
     if (!geocodeResult.ok) {
       if (geocodeResult.reason === 'invalid') {
@@ -140,35 +97,20 @@ export async function POST(request: NextRequest) {
       return createErrorResponse(404, 'GEOCODE_NOT_FOUND', '住所が見つかりませんでした。正しい住所を入力してください。');
     }
 
-    // 4. 自治体情報の検索
+    // 2. 用途地域の自動判定（国土交通省 不動産情報ライブラリAPI）
+    const zoningResult: ZoningLookupResult = await getZoningByLatLon(
+      geocodeResult.data.lat,
+      geocodeResult.data.lon
+    );
+
+    // 3. 自治体情報の検索
     const municipalityInfo = findMunicipality(
       geocodeResult.data.prefecture,
       geocodeResult.data.city
     );
 
-    // 5. 用途地域マップへの外部リンク生成
-    const externalMapUrl = `https://cityzone.mapexpert.net/?ll=${geocodeResult.data.lat},${geocodeResult.data.lon}&z=16`;
-
-    // --- 2. 利用回数制限のチェック ---
-    // Supabase の usage_counters テーブルを使用して回数を管理
-    const usageResult = await consumeUsage(usageSubject, usageLimit);
-    
-    if (!usageResult.allowed) {
-      const isGuest = !session;
-      const limitLabel = isGuest ? 'ゲスト利用上限' : 'プラン上限';
-      return createErrorResponse(
-        403, 
-        'USAGE_LIMIT', 
-        `今月の${limitLabel}（${usageResult.limit}回）に達しました。`,
-        {
-          limit: usageResult.limit,
-          current: usageResult.current,
-          planTier: session?.planTier || 'guest'
-        }
-      );
-    }
-
-    // 7. 判定結果の構築
+    // 4. 判定結果の構築
+    const z = zoningResult.zoning;
     const result: CheckResult = {
       address,
       geocode: {
@@ -180,13 +122,22 @@ export async function POST(request: NextRequest) {
         source: geocodeResult.data.source,
         retryCount: geocodeResult.data.retryCount,
       },
-      zoningReference: {
-        note: 'この地点の正確な用途地域は、下記の外部地図サービスで確認してください。用途地域が判明したら、下に用途地域別の民泊ルール一覧を参照できます。',
-        allZoningTypes: ZONING_TYPES.map((z) => ({
-          ...z,
-          statusLabel: getStatusLabel(z.minpakuStatus),
-        })),
-        externalMapUrl,
+      zoning: {
+        detected: zoningResult.detected,
+        name: z?.name || null,
+        code: z?.code || null,
+        description: z?.description || null,
+        minpakuStatus: z?.minpakuStatus || null,
+        minpakuStatusLabel: z ? getStatusLabel(z.minpakuStatus) : null,
+        ryokanStatus: z?.ryokanStatus || null,
+        ryokanStatusLabel: z ? getStatusLabel(z.ryokanStatus) : null,
+        minpakuDetail: z?.minpakuDetail || null,
+        color: z?.color || null,
+        floorAreaRatio: zoningResult.floorAreaRatio,
+        buildingCoverageRatio: zoningResult.buildingCoverageRatio,
+        rawZoningName: zoningResult.rawZoningName,
+        externalMapUrl: zoningResult.externalMapUrl,
+        source: 'reinfolib',
       },
       municipality: {
         found: !!municipalityInfo,
@@ -196,12 +147,7 @@ export async function POST(request: NextRequest) {
         municipalityLastVerifiedAt: MUNICIPALITY_DATA_LAST_VERIFIED_AT,
       },
       disclaimer:
-        '⚠️ 本ツールの判定結果は参考情報です。正確な用途地域の確認は、各自治体の都市計画課または用途地域マップ（外部リンク）をご利用ください。民泊営業の最終判断は、必ず管轄の保健所・自治体にご確認ください。',
-      usage: {
-        current: usageResult.current,
-        limit: toUsageLimitValue(usageLimit),
-        planTier: session?.planTier || 'guest',
-      },
+        '⚠️ 本ツールの判定結果は参考情報です。正確な用途地域の確認は、各自治体の都市計画課にお問い合わせください。民泊営業の最終判断は、必ず管轄の保健所・自治体にご確認ください。',
     };
 
     return NextResponse.json(result);
