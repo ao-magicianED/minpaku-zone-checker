@@ -261,126 +261,54 @@ export default function CheckPage() {
             )}
           </section>
 
-          {/* ステップ3: 自治体条例情報 */}
-          {result.municipality.found && result.municipality.info && (
-            <section className={`glass-card ${styles.municipalitySection}`}>
-              <h2 className={styles.sectionTitle}>🏛️ 自治体条例情報</h2>
-              <div className={styles.municipalityGrid}>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>自治体</span>
-                  <span className={styles.infoValue}>
-                    {result.municipality.info.prefecture} {result.municipality.info.city}
-                  </span>
-                </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>年間営業日数上限</span>
-                  <span className={styles.infoValue}>
-                    {result.municipality.info.maxDays}日
-                    {result.municipality.info.maxDays < 180 && (
-                      <span className="badge badge-warning" style={{ marginLeft: '8px' }}>
-                        法定上限より厳しい
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>区域制限</span>
-                  <span className={styles.infoValue}>
-                    {result.municipality.info.hasAreaRestriction ? (
-                      <span className="badge badge-warning">あり</span>
-                    ) : (
-                      <span className="badge badge-success">なし</span>
-                    )}
-                  </span>
-                </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>区域制限の詳細</span>
-                  <span className={styles.infoValue}>
-                    {result.municipality.info.areaRestrictionDetail}
-                  </span>
-                </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>届出先</span>
-                  <span className={styles.infoValue}>
-                    {result.municipality.info.submissionTo}
-                  </span>
-                </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>特記事項</span>
-                  <span className={styles.infoValue}>
-                    {result.municipality.info.notes}
-                  </span>
-                </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>問い合わせ先</span>
-                  <span className={styles.infoValue}>
-                    {result.municipality.info.contact}
-                  </span>
-                </div>
-                <div className={styles.infoItem}>
-                  <span className={styles.infoLabel}>データ最終確認日</span>
-                  <span className={styles.infoValue}>
-                    {result.dataMeta.municipalityLastVerifiedAt}
-                  </span>
-                </div>
-              </div>
-              <a
-                href={result.municipality.info.guidelineUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`btn btn-secondary ${styles.guidelineLink}`}
-              >
-                📄 公式ガイドラインを見る
-              </a>
-            </section>
-          )}
-
-          {!result.municipality.found && (
-            <section className={`glass-card ${styles.municipalitySection}`}>
-              <h2 className={styles.sectionTitle}>🏛️ 自治体条例情報</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>
-                この自治体の条例データはまだ収録されていません。
-                下記リンクから国土交通省の民泊ポータルサイトで確認できます。
-              </p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '8px' }}>
-                データ最終確認日: {result.dataMeta.municipalityLastVerifiedAt}
-              </p>
-              <a
-                href="https://www.mlit.go.jp/kankocho/minpaku/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-secondary"
-                style={{ marginTop: '16px' }}
-              >
-                民泊制度ポータルサイト →
-              </a>
-            </section>
-          )}
-
-          {/* ステップ4: 販売動線CTA */}
+          {/* ステップ3: 自治体条例・詳細チェック (AIへの誘導) */}
           <section className={`glass-card ${styles.ctaSection}`}>
-            <div className={styles.ctaTitle}>🎯 もっと詳しく知りたい方へ</div>
-            <p className={styles.ctaDescription}>
-              民泊事業の始め方、収益シミュレーション、申請手続きの詳細など、
-              AIが個別にアドバイスいたします。
-            </p>
-            <div className={styles.ctaButtons}>
-              <a
-                href="https://chatgpt.com/g/g-minpaku"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary btn-large"
-              >
-                🤖 民泊GPTsで相談する
-              </a>
-              <a
-                href="https://note.com/ao_salon_ai"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-secondary btn-large"
-              >
-                📝 noteで詳細を見る
-              </a>
+            <h2 className={styles.sectionTitle}>🏛️ 自治体ごとの細かい条例・ルールの確認</h2>
+            <div className={styles.ctaContent} style={{ textAlign: 'center' }}>
+              <p style={{ marginBottom: '24px', lineHeight: '1.8' }}>
+                用途地域による原則の可否がわかったら、次は<strong>『自治体ごとの上乗せ条例』</strong>の確認が必要です。<br />
+                「ここはこの用途地域だからOK！」と思って進めても、各自治体の独自のルールや制限によって、<br />
+                <span style={{ color: 'var(--error-color)', fontWeight: 'bold' }}>実際には営業できない・保健所の許可が下りない</span>という落とし穴全国各地にあります。
+              </p>
+
+              <div className={styles.gptFeatureBox} style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'inline-block', textAlign: 'left', marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: 'var(--accent-color)' }}>
+                  🌟 その面倒な確認作業、「AIボット」がすべて瞬時に解決します！
+                </h3>
+                 <p style={{ marginBottom: '12px' }}>
+                   毎回保健所に確認する手間を省く、民泊オーナー・開業検討者のための強力な相棒です。
+                 </p>
+                 <ul style={{ paddingLeft: '24px', lineHeight: '2' }}>
+                   <li>✅ 該当地域の用途地域や上乗せ条例を<strong>自動で徹底調査！</strong></li>
+                   <li>✅ 本当に民泊・旅館業の営業が可能か<strong>即座にファクトチェック！</strong></li>
+                   <li>✅ 該当自治体（保健所）の<strong>公式ページリンクを直接提示！</strong></li>
+                 </ul>
+              </div>
+
+              <p style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '32px' }}>
+                「民泊物件判別GPT」が、あなたの物件検討・調査時間を劇的に短縮します💨
+              </p>
+
+              <div className={styles.ctaButtons} style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+                <a
+                  href="https://note.com/ao_salon_ai/n/n888ddb49b460"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary btn-large"
+                  style={{ width: '100%', maxWidth: '500px', fontSize: '16px', fontWeight: 'bold', padding: '16px', background: 'linear-gradient(135deg, #1cb5e0 0%, #000851 100%)', border: 'none', boxShadow: '0 4px 15px rgba(28, 181, 224, 0.4)' }}
+                >
+                  📝 Noteで利用方法・購入ガイドを見る →
+                </a>
+                <a
+                  href="https://chatgpt.com/g/g-minpaku"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                  style={{ fontSize: '13px', padding: '8px 16px' }}
+                >
+                  🤖 購入済みの方はこちら（GPTsを起動する）
+                </a>
+              </div>
             </div>
           </section>
 

@@ -134,20 +134,25 @@ export default function Home() {
       {/* CTAセクション */}
       <section className={styles.cta}>
         <div className="container">
-          <div className={`glass-card ${styles.ctaCard}`}>
-            <h2>民泊事業をもっと深く知りたい方へ</h2>
-            <p>
-              用途地域チェッカーで大まかな可否が分かったら、次のステップへ。
-              <strong>民泊GPTs</strong>があなたの物件に合わせた個別アドバイスを提供します。
+          <div className={`glass-card ${styles.ctaCard}`} style={{ padding: '40px 24px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
+              面倒な「自治体ごとの上乗せ条例」の確認、AIに任せませんか？
+            </h2>
+            <p style={{ marginBottom: '24px', lineHeight: '1.8' }}>
+              用途地域上は営業可能でも、全国の自治体ごとに<strong>「平日営業禁止」「特定区域での制限」</strong>などの<br className="desktop-only" />
+              複雑な上乗せ条例が存在し、それに気づかず物件を契約してしまうケースが多発しています。<br />
+              <br />
+              <strong>「民泊物件判別GPT」</strong>を使えば、保健所に毎回確認する手間を省き、<br className="desktop-only" />
+              該当地域の上乗せ条例の自動調査や、公式ページリンクの直接提示までをAIが瞬時に実行します！
             </p>
-            <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a href="https://chatgpt.com/g/g-minpaku" target="_blank" rel="noopener noreferrer"
-                className="btn btn-primary btn-large">
-                🤖 民泊GPTsで相談する
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+              <a href="https://note.com/ao_salon_ai/n/n888ddb49b460" target="_blank" rel="noopener noreferrer"
+                className="btn btn-primary btn-large" style={{ width: '100%', maxWidth: '500px', fontSize: '16px', fontWeight: 'bold', padding: '16px', background: 'linear-gradient(135deg, #1cb5e0 0%, #000851 100%)', border: 'none', boxShadow: '0 4px 15px rgba(28, 181, 224, 0.4)' }}>
+                📝 Noteで利用方法・購入ガイドを見る →
               </a>
-              <a href="https://note.com/ao_salon_ai" target="_blank" rel="noopener noreferrer"
-                className="btn btn-secondary btn-large">
-                📝 noteで詳細を見る
+              <a href="https://chatgpt.com/g/g-minpaku" target="_blank" rel="noopener noreferrer"
+                className="btn btn-secondary" style={{ fontSize: '13px', padding: '8px 16px' }}>
+                🤖 購入済みの方はこちら（GPTsを起動する）
               </a>
             </div>
           </div>
