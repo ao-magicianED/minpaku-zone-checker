@@ -138,21 +138,47 @@ export default function Home() {
             <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
               面倒な「自治体ごとの上乗せ条例」の確認、AIに任せませんか？
             </h2>
-            <p style={{ marginBottom: '24px', lineHeight: '1.8' }}>
-              用途地域上は営業可能でも、全国の自治体ごとに<strong>「平日営業禁止」「特定区域での制限」</strong>などの<br className="desktop-only" />
-              複雑な上乗せ条例が存在し、それに気づかず物件を契約してしまうケースが多発しています。<br />
-              <br />
-              <strong>「民泊物件判別GPT」</strong>を使えば、保健所に毎回確認する手間を省き、<br className="desktop-only" />
-              該当地域の上乗せ条例の自動調査や、公式ページリンクの直接提示までをAIが瞬時に実行します！
+            <p style={{ marginBottom: '24px', lineHeight: '1.8', textAlign: 'center' }}>
+              用途地域上は営業可能でも、全国の自治体ごとに<strong>「平日営業禁止」「特定区域での制限」</strong>などの
+              複雑な上乗せ条例が存在し、それに気づかず物件を契約してしまうケースが多発しています。
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
-              <a href="https://note.com/ao_salon_ai/n/n888ddb49b460" target="_blank" rel="noopener noreferrer"
+
+            {/* あおサロンAI（主軸） */}
+            <div style={{ background: 'linear-gradient(135deg, rgba(28, 181, 224, 0.15), rgba(0, 8, 81, 0.2))', border: '2px solid rgba(28, 181, 224, 0.4)', borderRadius: '16px', padding: '28px 24px', marginBottom: '20px', textAlign: 'center' }}>
+              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1cb5e0', marginBottom: '8px', letterSpacing: '0.1em' }}>✨ おすすめ</div>
+              <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '12px' }}>
+                あおサロンAIに入会すると、民泊物件判別GPTを<span style={{ color: '#1cb5e0' }}>無償プレゼント🎁</span>
+              </h3>
+              <p style={{ fontSize: '14px', lineHeight: '1.8', marginBottom: '16px', color: 'var(--text-secondary)' }}>
+                月額 <strong style={{ fontSize: '20px', color: 'var(--text-primary)' }}>4,980円</strong>で、このGPTだけでなく
+                <strong>民泊ダッシュボード・プロンプト集・セミナー映像・Discordコミュニティ</strong>まですべて使い放題。<br />
+                単体購入（5,980円）より<span style={{ color: '#1cb5e0', fontWeight: 'bold' }}>月額が安い</span>のに、中身は圧倒的にお得です。
+              </p>
+              <a href="https://aosalonai.com" target="_blank" rel="noopener noreferrer"
                 className="btn btn-primary btn-large" style={{ width: '100%', maxWidth: '500px', fontSize: '16px', fontWeight: 'bold', padding: '16px', background: 'linear-gradient(135deg, #1cb5e0 0%, #000851 100%)', border: 'none', boxShadow: '0 4px 15px rgba(28, 181, 224, 0.4)' }}>
-                📝 Noteで利用方法・購入ガイドを見る →
+                🚀 あおサロンAIを見てみる →
               </a>
-              <a href="https://chatgpt.com/g/g-minpaku" target="_blank" rel="noopener noreferrer"
-                className="btn btn-secondary" style={{ fontSize: '13px', padding: '8px 16px' }}>
-                🤖 購入済みの方はこちら（GPTsを起動する）
+            </div>
+
+            {/* コラム記事 */}
+            <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '12px', padding: '16px 20px', marginBottom: '20px', border: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
+              <a href="https://aosalonai.com/columns/tokyo-23ku-minpaku-2026" target="_blank" rel="noopener noreferrer"
+                style={{ color: 'var(--text-primary)', textDecoration: 'none', fontSize: '14px' }}>
+                📖 【2026年最新】東京23区 民泊規制完全ガイド →
+              </a>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                他のエリアの条例解説コラムも随時配信中
+              </p>
+            </div>
+
+            {/* Note単体（サブ） */}
+            <div style={{ textAlign: 'center', opacity: 0.85 }}>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                民泊物件判別GPTを単体で購入したい方はこちら
+              </p>
+              <a href="https://note.com/ao_salon_ai/n/n888ddb49b460" target="_blank" rel="noopener noreferrer"
+                className="btn btn-secondary" style={{ fontSize: '13px', padding: '8px 24px' }}>
+                📝 Noteで単体購入する（5,980円）
               </a>
             </div>
           </div>

@@ -268,45 +268,80 @@ export default function CheckPage() {
               <p style={{ marginBottom: '24px', lineHeight: '1.8' }}>
                 用途地域による原則の可否がわかったら、次は<strong>『自治体ごとの上乗せ条例』</strong>の確認が必要です。<br />
                 「ここはこの用途地域だからOK！」と思って進めても、各自治体の独自のルールや制限によって、<br />
-                <span style={{ color: 'var(--error-color)', fontWeight: 'bold' }}>実際には営業できない・保健所の許可が下りない</span>という落とし穴全国各地にあります。
+                <span style={{ color: 'var(--error-color)', fontWeight: 'bold' }}>実際には営業できない・保健所の許可が下りない</span>という落とし穴が全国各地にあります。
               </p>
 
-              <div className={styles.gptFeatureBox} style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'inline-block', textAlign: 'left', marginBottom: '24px' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'inline-block', textAlign: 'left', marginBottom: '24px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: 'var(--accent-color)' }}>
-                  🌟 その面倒な確認作業、「AIボット」がすべて瞬時に解決します！
+                  🌟 その面倒な確認作業、「AIボット」がすべて瞬時に解決！
                 </h3>
-                 <p style={{ marginBottom: '12px' }}>
-                   毎回保健所に確認する手間を省く、民泊オーナー・開業検討者のための強力な相棒です。
-                 </p>
-                 <ul style={{ paddingLeft: '24px', lineHeight: '2' }}>
-                   <li>✅ 該当地域の用途地域や上乗せ条例を<strong>自動で徹底調査！</strong></li>
-                   <li>✅ 本当に民泊・旅館業の営業が可能か<strong>即座にファクトチェック！</strong></li>
-                   <li>✅ 該当自治体（保健所）の<strong>公式ページリンクを直接提示！</strong></li>
-                 </ul>
+                <p style={{ marginBottom: '12px' }}>
+                  毎回保健所に確認する手間を省く、民泊オーナー・開業検討者のための強力な相棒です。
+                </p>
+                <ul style={{ paddingLeft: '24px', lineHeight: '2' }}>
+                  <li>✅ 該当地域の用途地域や上乗せ条例を<strong>自動で徹底調査</strong></li>
+                  <li>✅ 本当に民泊・旅館業の営業が可能か<strong>即座にファクトチェック</strong></li>
+                  <li>✅ 該当自治体（保健所）の<strong>公式ページリンクを直接提示</strong></li>
+                </ul>
               </div>
 
               <p style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '32px' }}>
                 「民泊物件判別GPT」が、あなたの物件検討・調査時間を劇的に短縮します💨
               </p>
 
-              <div className={styles.ctaButtons} style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+              {/* あおサロンAI（主軸CTA） */}
+              <div style={{ background: 'linear-gradient(135deg, rgba(28, 181, 224, 0.15), rgba(0, 8, 81, 0.2))', border: '2px solid rgba(28, 181, 224, 0.4)', borderRadius: '16px', padding: '28px 24px', marginBottom: '20px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1cb5e0', marginBottom: '8px', letterSpacing: '0.1em' }}>✨ おすすめ</div>
+                <h4 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '12px' }}>
+                  あおサロンAIに入会すると、民泊物件判別GPTを<span style={{ color: '#1cb5e0' }}>無償プレゼント🎁</span>
+                </h4>
+                <p style={{ fontSize: '14px', lineHeight: '1.8', marginBottom: '16px', color: 'var(--text-secondary)' }}>
+                  月額 <strong style={{ fontSize: '20px', color: 'var(--text-primary)' }}>4,980円</strong>で、このGPTだけでなく
+                  <strong>民泊ダッシュボード・プロンプト集・セミナー映像・Discordコミュニティ</strong>まですべて使い放題。<br />
+                  単体購入（5,980円）より<span style={{ color: '#1cb5e0', fontWeight: 'bold' }}>月額が安い</span>のに、中身は圧倒的にお得です。
+                </p>
                 <a
-                  href="https://note.com/ao_salon_ai/n/n888ddb49b460"
+                  href="https://aosalonai.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-primary btn-large"
                   style={{ width: '100%', maxWidth: '500px', fontSize: '16px', fontWeight: 'bold', padding: '16px', background: 'linear-gradient(135deg, #1cb5e0 0%, #000851 100%)', border: 'none', boxShadow: '0 4px 15px rgba(28, 181, 224, 0.4)' }}
                 >
-                  📝 Noteで利用方法・購入ガイドを見る →
+                  🚀 あおサロンAIを見てみる →
                 </a>
+              </div>
+
+              {/* コラム記事への誘導 */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '12px', padding: '20px', marginBottom: '20px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-secondary)' }}>
+                  📚 あおサロンAIの無料コラムもチェック
+                </p>
                 <a
-                  href="https://chatgpt.com/g/g-minpaku"
+                  href="https://aosalonai.com/columns/tokyo-23ku-minpaku-2026"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: 'block', padding: '12px 16px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', textDecoration: 'none', color: 'var(--text-primary)', fontSize: '14px', marginBottom: '8px', border: '1px solid rgba(255, 255, 255, 0.06)', transition: 'background 0.2s' }}
+                >
+                  📖 【2026年最新】東京23区 民泊規制完全ガイド｜全区の上乗せ条例を比較表で徹底解説 →
+                </a>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  他のエリアの条例解説や、民泊経営に役立つ最新コラムを随時配信中！
+                </p>
+              </div>
+
+              {/* Note単体購入（サブCTA） */}
+              <div style={{ opacity: 0.85 }}>
+                <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                  民泊物件判別GPTを単体で購入したい方はこちら
+                </p>
+                <a
+                  href="https://note.com/ao_salon_ai/n/n888ddb49b460"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-secondary"
-                  style={{ fontSize: '13px', padding: '8px 16px' }}
+                  style={{ fontSize: '13px', padding: '8px 24px' }}
                 >
-                  🤖 購入済みの方はこちら（GPTsを起動する）
+                  📝 Noteで単体購入する（5,980円）
                 </a>
               </div>
             </div>
