@@ -298,7 +298,7 @@ export default function CheckPage() {
                 <p style={{ fontSize: '14px', lineHeight: '1.8', marginBottom: '16px', color: 'var(--text-secondary)' }}>
                   月額 <strong style={{ fontSize: '20px', color: 'var(--text-primary)' }}>4,980円</strong>で、このGPTだけでなく
                   <strong>民泊ダッシュボード・プロンプト集・セミナー映像・Discordコミュニティ</strong>まですべて使い放題。<br />
-                  単体購入（5,980円）より<span style={{ color: '#1cb5e0', fontWeight: 'bold' }}>月額が安い</span>のに、中身は圧倒的にお得です。
+                  単体購入（12,000円）より<span style={{ color: '#1cb5e0', fontWeight: 'bold' }}>月額が安い</span>のに、中身は圧倒的にお得です。
                 </p>
                 <a
                   href="https://aosalonai.com"
@@ -341,7 +341,7 @@ export default function CheckPage() {
                   className="btn btn-secondary"
                   style={{ fontSize: '13px', padding: '8px 24px' }}
                 >
-                  📝 Noteで単体購入する（5,980円）
+                  📝 Noteで単体購入する（12,000円）
                 </a>
               </div>
             </div>
