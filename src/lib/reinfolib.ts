@@ -122,21 +122,38 @@ function pointInFeature(lon: number, lat: number, feature: GeoJSONFeature): bool
 // ---------------------------------------------------------------------------
 
 /**
+ * 全角数字・算用数字を漢数字に変換
+ * 例: "第１種" → "第一種", "第2種" → "第二種"
+ */
+function normalizeZoningName(name: string): string {
+  const digitToKanji: Record<string, string> = {
+    '1': '一', '2': '二', '3': '三', '4': '四', '5': '五',
+    '6': '六', '7': '七', '8': '八', '9': '九', '0': '〇',
+    '１': '一', '２': '二', '３': '三', '４': '四', '５': '五',
+    '６': '六', '７': '七', '８': '八', '９': '九', '０': '〇',
+  };
+  return name.replace(/[0-9０-９]/g, (ch) => digitToKanji[ch] || ch).replace(/\s+/g, '');
+}
+
+/**
  * 国土交通省APIが返す `use_area_ja` をアプリ内の ZoningType にマッピング
  */
 function matchZoningType(useAreaJa: string): ZoningType | null {
-  // 完全一致
-  const exact = ZONING_TYPES.find((z) => z.name === useAreaJa);
+  // 数字を正規化してから比較（"第１種" → "第一種"）
+  const normalized = normalizeZoningName(useAreaJa);
+
+  // 完全一致（正規化済み）
+  const exact = ZONING_TYPES.find((z) => normalizeZoningName(z.name) === normalized);
   if (exact) return exact;
 
-  // 部分一致（略称対応）
-  const partial = ZONING_TYPES.find((z) =>
-    useAreaJa.includes(z.name) || z.name.includes(useAreaJa)
-  );
+  // 部分一致
+  const partial = ZONING_TYPES.find((z) => {
+    const zNorm = normalizeZoningName(z.name);
+    return normalized.includes(zNorm) || zNorm.includes(normalized);
+  });
   if (partial) return partial;
 
-  // youto_id ベースのマッピング
-  const normalizedName = useAreaJa.replace(/\s+/g, '');
+  // コードベースのマッピング（フォールバック）
   const mapping: Record<string, string> = {
     '第一種低層住居専用地域': '1SR',
     '第二種低層住居専用地域': '2SR',
@@ -153,7 +170,7 @@ function matchZoningType(useAreaJa: string): ZoningType | null {
     '田園住居地域': 'DNR',
   };
 
-  const code = mapping[normalizedName];
+  const code = mapping[normalized];
   if (code) {
     return ZONING_TYPES.find((z) => z.code === code) || null;
   }
