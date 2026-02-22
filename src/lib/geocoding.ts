@@ -61,7 +61,7 @@ interface NominatimResponse {
   type: string;
 }
 
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 5;
 const NOMINATIM_TIMEOUT_MS = 6000;
 
 function delay(ms: number): Promise<void> {
@@ -77,15 +77,68 @@ function hasCityLevelAddress(address: string): boolean {
 }
 
 /**
- * 住所の末尾にある「-数字」「番地」「号」などを削除して親の住所を返す
+ * 日本の住所をNominatimが理解しやすい形に正規化する
+ * 例: "東京都豊島区駒込6-32-5" → "東京都豊島区駒込6丁目32-5"
+ */
+function normalizeJapaneseAddress(address: string): string {
+  let normalized = address;
+
+  // 全角数字を半角に変換
+  normalized = normalized.replace(/[０-９]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)
+  );
+  // 全角ハイフンを半角に変換
+  normalized = normalized.replace(/[－ー−—]/g, '-');
+
+  // "X-Y-Z" パターンを "X丁目Y-Z" に変換（丁目がまだない場合のみ）
+  // 町名の後に続くハイフン区切りの番地を変換
+  if (!normalized.includes('丁目') && !normalized.includes('番地')) {
+    normalized = normalized.replace(
+      /([\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff])(\d+)-(\d+)(?:-(\d+))?$/,
+      (_, prefix, chome, ban, go) => {
+        if (go) {
+          return `${prefix}${chome}丁目${ban}-${go}`;
+        }
+        return `${prefix}${chome}丁目${ban}`;
+      }
+    );
+  }
+
+  return normalized;
+}
+
+/**
+ * 住所を段階的に簡略化して親の住所を返す
+ * 優先順位: 号 → 番地 → 丁目の番号以降 → 丁目全体
  */
 function truncateAddress(address: string): string {
   const trimmed = address.trim();
-  const numberRemoved = trimmed.replace(/[-－ー\s]*[0-9０-９]+$/, '').trim();
-  if (numberRemoved !== trimmed) {
-    return numberRemoved;
+
+  // Step 1: 末尾の「-数字」を削除（例: "6丁目32-5" → "6丁目32"）
+  const hyphenRemoved = trimmed.replace(/-\d+$/, '').trim();
+  if (hyphenRemoved !== trimmed && hyphenRemoved.length > 0) {
+    return hyphenRemoved;
   }
-  return trimmed.replace(/(号室|号|番|丁目|階)$/, '').trim();
+
+  // Step 2: 末尾の数字を削除（例: "6丁目32" → "6丁目"）
+  const numRemoved = trimmed.replace(/\d+$/, '').trim();
+  if (numRemoved !== trimmed && numRemoved.length > 0) {
+    return numRemoved;
+  }
+
+  // Step 3: 「丁目」を削除（例: "駒込6丁目" → "駒込"）
+  const chomeRemoved = trimmed.replace(/\d*丁目$/, '').trim();
+  if (chomeRemoved !== trimmed && chomeRemoved.length > 0) {
+    return chomeRemoved;
+  }
+
+  // Step 4: 末尾の助数詞を削除
+  const suffixRemoved = trimmed.replace(/(号室|号|番地|番)$/, '').trim();
+  if (suffixRemoved !== trimmed && suffixRemoved.length > 0) {
+    return suffixRemoved;
+  }
+
+  return trimmed;
 }
 
 /**
@@ -104,7 +157,7 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult> {
     };
   }
 
-  let searchAddress = normalizedInput;
+  let searchAddress = normalizeJapaneseAddress(normalizedInput);
   const attemptedAddresses: string[] = [];
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
