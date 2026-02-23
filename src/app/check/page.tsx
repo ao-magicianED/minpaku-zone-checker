@@ -261,42 +261,102 @@ export default function CheckPage() {
             )}
           </section>
 
-          {/* ステップ3: 自治体条例・詳細チェック (AIへの誘導) */}
+          {/* ステップ3: 民泊物件判別GPTの紹介 + 入手方法 */}
           <section className={`glass-card ${styles.ctaSection}`}>
-            <h2 className={styles.sectionTitle}>🏛️ 自治体ごとの細かい条例・ルールの確認</h2>
+            <h2 className={styles.sectionTitle}>🏛️ 次のステップ：自治体条例の詳細チェック</h2>
             <div className={styles.ctaContent} style={{ textAlign: 'center' }}>
+
+              {/* 問題提起 */}
               <p style={{ marginBottom: '24px', lineHeight: '1.8' }}>
-                用途地域による原則の可否がわかったら、次は<strong>『自治体ごとの上乗せ条例』</strong>の確認が必要です。<br />
-                「ここはこの用途地域だからOK！」と思って進めても、各自治体の独自のルールや制限によって、<br />
-                <span style={{ color: 'var(--error-color)', fontWeight: 'bold' }}>実際には営業できない・保健所の許可が下りない</span>という落とし穴が全国各地にあります。
+                用途地域による原則の可否がわかったら、次は<strong>『自治体ごとの上乗せ条例』</strong>の確認が不可欠です。<br />
+                「用途地域的にOKだから大丈夫」と思って物件を契約しても、自治体独自のルールで<br />
+                <span style={{ color: 'var(--error-color)', fontWeight: 'bold' }}>平日営業禁止・特定区域での制限・届出が通らない</span>ケースが全国で多発しています。
               </p>
 
-              <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', display: 'inline-block', textAlign: 'left', marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: 'var(--accent-color)' }}>
-                  🌟 その面倒な確認作業、「AIボット」がすべて瞬時に解決！
+              {/* GPT製品紹介 */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '28px 24px', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.1)', textAlign: 'left', marginBottom: '28px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>
+                  🤖 民泊物件判別GPT
                 </h3>
-                <p style={{ marginBottom: '12px' }}>
-                  毎回保健所に確認する手間を省く、民泊オーナー・開業検討者のための強力な相棒です。
+                <p style={{ fontSize: '14px', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '20px' }}>
+                  民泊・旅館業アドバイザーチャット
                 </p>
-                <ul style={{ paddingLeft: '24px', lineHeight: '2' }}>
-                  <li>✅ 該当地域の用途地域や上乗せ条例を<strong>自動で徹底調査</strong></li>
-                  <li>✅ 本当に民泊・旅館業の営業が可能か<strong>即座にファクトチェック</strong></li>
-                  <li>✅ 該当自治体（保健所）の<strong>公式ページリンクを直接提示</strong></li>
-                </ul>
+
+                <p style={{ marginBottom: '20px', lineHeight: '1.8', fontSize: '15px' }}>
+                  住所を入力するだけで、その物件エリアの上乗せ条例・営業可否を<strong>AIが瞬時に調査</strong>。<br />
+                  毎回保健所に電話する手間から解放される、物件検討時の強力な相棒です。
+                </p>
+
+                {/* 4つの機能 */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+                  <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>🔍</div>
+                    <strong style={{ fontSize: '14px' }}>条例の自動調査</strong>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      住所を入力するだけで、該当エリアの上乗せ条例・営業制限を一括検索
+                    </p>
+                  </div>
+                  <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>⚖️</div>
+                    <strong style={{ fontSize: '14px' }}>両面ファクトチェック</strong>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      旅館業法（簡易宿所）と住宅宿泊事業法（民泊新法）の両面から営業可否を診断
+                    </p>
+                  </div>
+                  <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>🏢</div>
+                    <strong style={{ fontSize: '14px' }}>公式リンク提示</strong>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      該当する自治体・保健所の公式ページリンクを提示し、最終確認もスムーズ
+                    </p>
+                  </div>
+                  <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <div style={{ fontSize: '24px', marginBottom: '8px' }}>📎</div>
+                    <strong style={{ fontSize: '14px' }}>多彩な入力に対応</strong>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      住所だけでなく、Googleマップのリンクや物件の募集図面からも読み取り可能
+                    </p>
+                  </div>
+                </div>
+
+                {/* 利用の流れ */}
+                <div style={{ background: 'rgba(28, 181, 224, 0.08)', padding: '16px 20px', borderRadius: '10px', marginBottom: '20px' }}>
+                  <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', color: 'var(--accent-color)' }}>📋 使い方はかんたん3ステップ</p>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <span style={{ background: 'rgba(255,255,255,0.08)', padding: '6px 12px', borderRadius: '20px', fontSize: '12px' }}>❶ リンクからChatGPTを起動</span>
+                    <span style={{ fontSize: '12px', lineHeight: '2' }}>→</span>
+                    <span style={{ background: 'rgba(255,255,255,0.08)', padding: '6px 12px', borderRadius: '20px', fontSize: '12px' }}>❷ 住所・MAP・図面を送信</span>
+                    <span style={{ fontSize: '12px', lineHeight: '2' }}>→</span>
+                    <span style={{ background: 'rgba(255,255,255,0.08)', padding: '6px 12px', borderRadius: '20px', fontSize: '12px' }}>❸ 即座に診断結果を取得</span>
+                  </div>
+                </div>
+
+                {/* デモ動画 */}
+                <div style={{ textAlign: 'center' }}>
+                  <a
+                    href="https://youtu.be/x4YP7bhacHA"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'rgba(255, 0, 0, 0.1)', borderRadius: '8px', color: '#ff6b6b', textDecoration: 'none', fontSize: '14px', fontWeight: 'bold', border: '1px solid rgba(255, 0, 0, 0.2)' }}
+                  >
+                    ▶️ 実際の動作をデモ動画で見る（YouTube）
+                  </a>
+                </div>
               </div>
 
-              <p style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '32px' }}>
-                「民泊物件判別GPT」が、あなたの物件検討・調査時間を劇的に短縮します💨
-              </p>
+              {/* 入手方法の見出し */}
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px' }}>
+                💡 民泊物件判別GPTの入手方法
+              </h3>
 
               {/* あおサロンAI（主軸CTA） */}
-              <div style={{ background: 'linear-gradient(135deg, rgba(28, 181, 224, 0.15), rgba(0, 8, 81, 0.2))', border: '2px solid rgba(28, 181, 224, 0.4)', borderRadius: '16px', padding: '28px 24px', marginBottom: '20px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1cb5e0', marginBottom: '8px', letterSpacing: '0.1em' }}>✨ おすすめ</div>
+              <div style={{ background: 'linear-gradient(135deg, rgba(28, 181, 224, 0.15), rgba(0, 8, 81, 0.2))', border: '2px solid rgba(28, 181, 224, 0.4)', borderRadius: '16px', padding: '28px 24px', marginBottom: '16px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1cb5e0', marginBottom: '8px', letterSpacing: '0.1em' }}>✨ おすすめ ― 単体購入よりお得！</div>
                 <h4 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '12px' }}>
-                  あおサロンAIに入会すると、民泊物件判別GPTを<span style={{ color: '#1cb5e0' }}>無償プレゼント🎁</span>
+                  あおサロンAIに入会すると<span style={{ color: '#1cb5e0' }}>無償プレゼント🎁</span>
                 </h4>
                 <p style={{ fontSize: '14px', lineHeight: '1.8', marginBottom: '16px', color: 'var(--text-secondary)' }}>
-                  月額 <strong style={{ fontSize: '20px', color: 'var(--text-primary)' }}>4,980円</strong>で、このGPTだけでなく
+                  月額 <strong style={{ fontSize: '20px', color: 'var(--text-primary)' }}>4,980円</strong>で、民泊物件判別GPTだけでなく
                   <strong>民泊ダッシュボード・プロンプト集・セミナー映像・Discordコミュニティ</strong>まですべて使い放題。<br />
                   単体購入（12,000円）より<span style={{ color: '#1cb5e0', fontWeight: 'bold' }}>月額が安い</span>のに、中身は圧倒的にお得です。
                 </p>
@@ -311,28 +371,10 @@ export default function CheckPage() {
                 </a>
               </div>
 
-              {/* コラム記事への誘導 */}
-              <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '12px', padding: '20px', marginBottom: '20px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-secondary)' }}>
-                  📚 あおサロンAIの無料コラムもチェック
-                </p>
-                <a
-                  href="https://aosalonai.com/columns/tokyo-23ku-minpaku-2026"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ display: 'block', padding: '12px 16px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', textDecoration: 'none', color: 'var(--text-primary)', fontSize: '14px', marginBottom: '8px', border: '1px solid rgba(255, 255, 255, 0.06)', transition: 'background 0.2s' }}
-                >
-                  📖 【2026年最新】東京23区 民泊規制完全ガイド｜全区の上乗せ条例を比較表で徹底解説 →
-                </a>
-                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  他のエリアの条例解説や、民泊経営に役立つ最新コラムを随時配信中！
-                </p>
-              </div>
-
-              {/* Note単体購入（サブCTA） */}
-              <div style={{ opacity: 0.85 }}>
+              {/* Note単体購入 */}
+              <div style={{ padding: '16px 24px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)', marginBottom: '24px' }}>
                 <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                  民泊物件判別GPTを単体で購入したい方はこちら
+                  GPT単体で購入したい方はこちら
                 </p>
                 <a
                   href="https://note.com/ao_salon_ai/n/n888ddb49b460"
@@ -343,6 +385,24 @@ export default function CheckPage() {
                 >
                   📝 Noteで単体購入する（12,000円）
                 </a>
+              </div>
+
+              {/* コラム記事への誘導 */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '12px', padding: '20px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-secondary)' }}>
+                  📚 あおサロンAIの無料コラムもチェック
+                </p>
+                <a
+                  href="https://aosalonai.com/columns/tokyo-23ku-minpaku-2026"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: 'block', padding: '12px 16px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', textDecoration: 'none', color: 'var(--text-primary)', fontSize: '14px', marginBottom: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+                >
+                  📖 【2026年最新】東京23区 民泊規制完全ガイド｜全区の上乗せ条例を比較表で徹底解説 →
+                </a>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  他のエリアの条例解説や、民泊経営に役立つ最新コラムを随時配信中！
+                </p>
               </div>
             </div>
           </section>
