@@ -58,7 +58,9 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {},
+  verification: {
+    google: '_LrK0HNfGGTuayY4OIViBd4qtLzNnUvdfMp4xAZTe8Q',
+  },
   category: '不動産・民泊',
 };
 
