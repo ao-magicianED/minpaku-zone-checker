@@ -60,6 +60,33 @@ export default function CheckPage() {
     }
   };
 
+  const handleMarkerDragEnd = async (lat: number, lon: number) => {
+    setLoading(true);
+    setError(null);
+    // UIをチラつかせないため、既存のresultは保持したまま再フェッチ
+
+    try {
+      const res = await fetch('/api/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lon }), // 緯度経度を直接送る
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || '再判定に失敗しました');
+        return;
+      }
+
+      setResult(data);
+    } catch {
+      setError('通信エラーが発生しました。もう一度お試しください。');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       {/* 印刷用ヘッダー（画面上は非表示） */}
@@ -158,11 +185,37 @@ export default function CheckPage() {
                 座標: {result.geocode.lat.toFixed(6)}, {result.geocode.lon.toFixed(6)}
               </p>
             </div>
-            <MapView
-              lat={result.geocode.lat}
-              lon={result.geocode.lon}
-              markerLabel={result.address}
-            />
+            
+            <div style={{ position: 'relative' }}>
+              <MapView
+                lat={result.geocode.lat}
+                lon={result.geocode.lon}
+                markerLabel={result.address}
+                draggable={true}
+                onMarkerDragEnd={handleMarkerDragEnd}
+              />
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                left: '50px',
+                zIndex: 1000,
+                background: 'rgba(255, 255, 255, 0.9)',
+                backdropFilter: 'blur(4px)',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                color: '#333',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                border: '1px solid rgba(0,0,0,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                pointerEvents: 'none'
+              }}>
+                <span style={{ fontSize: '16px' }}>👆</span> ピンを動かして位置を微調整できます
+              </div>
+            </div>
           </section>
 
           {/* ステップ2: 用途地域判定結果 */}

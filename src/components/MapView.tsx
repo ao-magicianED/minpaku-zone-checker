@@ -9,12 +9,14 @@ interface MapViewProps {
   lon: number;
   zoom?: number;
   markerLabel?: string;
+  draggable?: boolean;
+  onMarkerDragEnd?: (lat: number, lon: number) => void;
 }
 
 /**
  * Leaflet 地図コンポーネント（クライアントサイドのみ）
  */
-export default function MapView({ lat, lon, zoom = 16, markerLabel }: MapViewProps) {
+export default function MapView({ lat, lon, zoom = 16, markerLabel, draggable = false, onMarkerDragEnd }: MapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
@@ -50,6 +52,7 @@ export default function MapView({ lat, lon, zoom = 16, markerLabel }: MapViewPro
         justify-content: center;
         box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
         border: 2px solid white;
+        ${draggable ? 'cursor: grab;' : ''}
       "><span style="
         transform: rotate(45deg);
         font-size: 16px;
@@ -60,9 +63,20 @@ export default function MapView({ lat, lon, zoom = 16, markerLabel }: MapViewPro
     });
 
     // マーカー追加
-    const marker = L.marker([lat, lon], { icon: customIcon }).addTo(map);
+    const marker = L.marker([lat, lon], { 
+      icon: customIcon,
+      draggable: draggable 
+    }).addTo(map);
+
     if (markerLabel) {
       marker.bindPopup(`<b>${markerLabel}</b>`).openPopup();
+    }
+
+    if (draggable && onMarkerDragEnd) {
+      marker.on('dragend', () => {
+        const position = marker.getLatLng();
+        onMarkerDragEnd(position.lat, position.lng);
+      });
     }
 
     // クリーンアップ

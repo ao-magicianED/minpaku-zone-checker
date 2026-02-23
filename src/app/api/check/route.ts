@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { geocodeAddress } from '@/lib/geocoding';
+import { geocodeAddress, reverseGeocode } from '@/lib/geocoding';
 import { getStatusLabel } from '@/lib/zoning-data';
 import { findMunicipality, MUNICIPALITY_DATA_LAST_VERIFIED_AT } from '@/lib/municipality-data';
 import { getZoningByLatLon, type ZoningLookupResult } from '@/lib/reinfolib';
@@ -23,7 +23,7 @@ export interface CheckResult {
     displayName: string;
     prefecture: string;
     city: string;
-    source: 'nominatim' | 'mlit';
+    source: 'nominatim' | 'mlit' | 'google';
     retryCount: number;
   };
   /** 用途地域の自動判定結果 */
@@ -70,31 +70,46 @@ function createErrorResponse(
 
 /**
  * POST /api/check
- * 住所を受け取り、ジオコーディング＋用途地域自動判定＋自治体情報を返す
+ * 住所、または緯度経度を受け取り、用途地域自動判定＋自治体情報を返す
  */
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-    const address = typeof body?.address === 'string' ? body.address.trim() : '';
+    let address = typeof body?.address === 'string' ? body.address.trim() : '';
+    const lat = typeof body?.lat === 'number' ? body.lat : null;
+    const lon = typeof body?.lon === 'number' ? body.lon : null;
 
-    if (!address) {
-      return createErrorResponse(400, 'INVALID_INPUT', '住所を入力してください');
-    }
+    let geocodeResult;
 
-    // 1. ジオコーディング（住所 → 緯度経度）
-    const geocodeResult = await geocodeAddress(address);
-    if (!geocodeResult.ok) {
-      if (geocodeResult.reason === 'invalid') {
-        return createErrorResponse(400, 'INVALID_INPUT', geocodeResult.message);
+    // 1. ジオコーディング or 逆ジオコーディング
+    if (lat !== null && lon !== null) {
+      // 緯度経度が直接指定された場合（マップピンのドラッグ等）
+      const reverseData = await reverseGeocode(lat, lon);
+      if (!reverseData) {
+        return createErrorResponse(404, 'GEOCODE_NOT_FOUND', '指定された座標の住所情報が確認できませんでした。');
       }
-      if (geocodeResult.reason === 'upstream_error') {
-        return createErrorResponse(
-          502,
-          'GEOCODE_UPSTREAM',
-          '住所検索サーバーで一時的な問題が発生しています。時間をおいて再度お試しください。'
-        );
+      geocodeResult = { ok: true as const, data: reverseData };
+      address = address || reverseData.displayName;
+    } else {
+      if (!address) {
+        return createErrorResponse(400, 'INVALID_INPUT', '住所を入力してください');
       }
-      return createErrorResponse(404, 'GEOCODE_NOT_FOUND', '住所が見つかりませんでした。正しい住所を入力してください。');
+
+      // 住所から緯度経度を検索
+      geocodeResult = await geocodeAddress(address);
+      if (!geocodeResult.ok) {
+        if (geocodeResult.reason === 'invalid') {
+          return createErrorResponse(400, 'INVALID_INPUT', geocodeResult.message);
+        }
+        if (geocodeResult.reason === 'upstream_error') {
+          return createErrorResponse(
+            502,
+            'GEOCODE_UPSTREAM',
+            '住所検索サーバーで一時的な問題が発生しています。時間をおいて再度お試しください。'
+          );
+        }
+        return createErrorResponse(404, 'GEOCODE_NOT_FOUND', '住所が見つかりませんでした。正しい住所を入力してください。');
+      }
     }
 
     // 2. 用途地域の自動判定（国土交通省 不動産情報ライブラリAPI）

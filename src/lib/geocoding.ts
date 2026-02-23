@@ -3,7 +3,7 @@
  * OpenStreetMap Nominatim APIを使用（無料・APIキー不要）
  */
 
-export type GeocodeSource = 'nominatim' | 'mlit';
+export type GeocodeSource = 'nominatim' | 'mlit' | 'google';
 export type GeocodeFailureReason = 'invalid' | 'not_found' | 'upstream_error';
 
 /** ジオコーディング結果 */
@@ -59,6 +59,27 @@ interface NominatimResponse {
     [key: string]: string | undefined;
   };
   type: string;
+}
+
+/** Google Maps Geocoding APIのレスポンス型 */
+interface GoogleGeocodingResponse {
+  status: string;
+  results: {
+    formatted_address: string;
+    geometry: {
+      location: {
+        lat: number;
+        lng: number;
+      };
+      location_type: string;
+    };
+    address_components: {
+      long_name: string;
+      short_name: string;
+      types: string[];
+    }[];
+  }[];
+  error_message?: string;
 }
 
 const MAX_ATTEMPTS = 5;
@@ -143,7 +164,7 @@ function truncateAddress(address: string): string {
 
 /**
  * 住所を緯度経度に変換（ジオコーディング）
- * Nominatim 利用ポリシー: 1秒/リクエスト、1日2000回以下
+ * Google Maps APIキーが設定されていればGoogleを使用、なければNominatimにフォールバック
  */
 export async function geocodeAddress(address: string): Promise<GeocodeResult> {
   const normalizedInput = normalizeInputAddress(address);
@@ -157,6 +178,107 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult> {
     };
   }
 
+  const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+  if (googleApiKey) {
+    return geocodeWithGoogle(normalizedInput, googleApiKey);
+  } else {
+    return geocodeWithNominatim(normalizedInput);
+  }
+}
+
+/**
+ * Google Maps Geocoding API を使用した検索（高精度・住所正規化不要）
+ */
+async function geocodeWithGoogle(address: string, apiKey: string): Promise<GeocodeResult> {
+  const encodedAddress = encodeURIComponent(address);
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&region=jp&language=ja&key=${apiKey}`;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), NOMINATIM_TIMEOUT_MS);
+    
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        reason: 'upstream_error',
+        message: `Google Maps API エラー: ${response.status}`,
+        status: response.status,
+        retryCount: 0,
+        attemptedAddresses: [address],
+      };
+    }
+
+    const data = (await response.json()) as GoogleGeocodingResponse;
+
+    if (data.status === 'OK' && data.results.length > 0) {
+      const result = data.results[0];
+      const location = result.geometry.location;
+      
+      let prefecture = '';
+      let city = '';
+      
+      // address_componentsから都道府県と市区町村を抽出
+      for (const component of result.address_components) {
+        if (component.types.includes('administrative_area_level_1')) {
+          prefecture = component.long_name;
+        } else if (component.types.includes('locality') || component.types.includes('administrative_area_level_2')) {
+          city += component.long_name;
+        }
+      }
+
+      return {
+        ok: true,
+        data: {
+          lat: location.lat,
+          lon: location.lng,
+          displayName: result.formatted_address,
+          prefecture,
+          city,
+          type: result.geometry.location_type,
+          source: 'google',
+          retryCount: 0,
+          normalizedAddress: address,
+        },
+        attemptedAddresses: [address],
+      };
+    } else if (data.status === 'ZERO_RESULTS') {
+      return {
+        ok: false,
+        reason: 'not_found',
+        message: '住所が見つかりませんでした。',
+        retryCount: 0,
+        attemptedAddresses: [address],
+      };
+    } else {
+      console.error('Google Maps API Error:', data.status, data.error_message);
+      return {
+        ok: false,
+        reason: 'upstream_error',
+        message: `Google Maps API エラー: ${data.status}`,
+        retryCount: 0,
+        attemptedAddresses: [address],
+      };
+    }
+  } catch (error) {
+    const isTimeout = error instanceof Error && error.name === 'AbortError';
+    return {
+      ok: false,
+      reason: 'upstream_error',
+      message: isTimeout ? '住所検索サーバーがタイムアウトしました。' : '住所検索サーバーに接続できませんでした。',
+      retryCount: 0,
+      attemptedAddresses: [address],
+    };
+  }
+}
+
+/**
+ * Nominatim APIを使用した検索（フォールバック用。徐々に短くして検索）
+ */
+async function geocodeWithNominatim(normalizedInput: string): Promise<GeocodeResult> {
   let searchAddress = normalizeJapaneseAddress(normalizedInput);
   const attemptedAddresses: string[] = [];
 
@@ -275,6 +397,61 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult> {
  * 緯度経度から住所を取得（逆ジオコーディング）
  */
 export async function reverseGeocode(lat: number, lon: number): Promise<GeocodingResult | null> {
+  const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+  if (googleApiKey) {
+    return reverseGeocodeWithGoogle(lat, lon, googleApiKey);
+  } else {
+    return reverseGeocodeWithNominatim(lat, lon);
+  }
+}
+
+/**
+ * Google Maps APIを使用する逆ジオコーディング
+ */
+async function reverseGeocodeWithGoogle(lat: number, lon: number, apiKey: string): Promise<GeocodingResult | null> {
+  try {
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&language=ja&key=${apiKey}`;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as GoogleGeocodingResponse;
+    if (data.status === 'OK' && data.results.length > 0) {
+      const result = data.results[0];
+      let prefecture = '';
+      let city = '';
+      
+      for (const component of result.address_components) {
+        if (component.types.includes('administrative_area_level_1')) {
+          prefecture = component.long_name;
+        } else if (component.types.includes('locality') || component.types.includes('administrative_area_level_2')) {
+          city += component.long_name;
+        }
+      }
+
+      return {
+        lat,
+        lon,
+        displayName: result.formatted_address,
+        prefecture,
+        city,
+        type: result.geometry?.location_type || 'ROOFTOP',
+        source: 'google',
+        retryCount: 0,
+        normalizedAddress: result.formatted_address,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Google逆ジオコーディングエラー:', error);
+    return null;
+  }
+}
+
+/**
+ * Nominatimを使用する逆ジオコーディング
+ */
+async function reverseGeocodeWithNominatim(lat: number, lon: number): Promise<GeocodingResult | null> {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
 
@@ -309,7 +486,7 @@ export async function reverseGeocode(lat: number, lon: number): Promise<Geocodin
       normalizedAddress: data.display_name,
     };
   } catch (error) {
-    console.error('逆ジオコーディングエラー:', error);
+    console.error('Nominatim逆ジオコーディングエラー:', error);
     return null;
   }
 }
