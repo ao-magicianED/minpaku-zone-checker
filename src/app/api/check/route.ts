@@ -3,11 +3,14 @@ import { geocodeAddress, reverseGeocode } from '@/lib/geocoding';
 import { getStatusLabel } from '@/lib/zoning-data';
 import { findMunicipality, MUNICIPALITY_DATA_LAST_VERIFIED_AT } from '@/lib/municipality-data';
 import { getZoningByLatLon, type ZoningLookupResult } from '@/lib/reinfolib';
+import { getSession, getUsageLimit } from '@/lib/auth';
+import { buildUsageSubject, consumeUsage, getCurrentUsageCount } from '@/lib/usage';
 
 type CheckErrorCode =
   | 'INVALID_INPUT'
   | 'GEOCODE_NOT_FOUND'
   | 'GEOCODE_UPSTREAM'
+  | 'USAGE_LIMIT_EXCEEDED'
   | 'INTERNAL';
 
 /**
@@ -53,6 +56,11 @@ export interface CheckResult {
   dataMeta: {
     municipalityLastVerifiedAt: string;
   };
+  /** 利用回数情報 */
+  usage?: {
+    limit: number;
+    current: number;
+  };
   /** 免責事項 */
   disclaimer: string;
 }
@@ -60,10 +68,11 @@ export interface CheckResult {
 function createErrorResponse(
   status: number,
   errorCode: CheckErrorCode,
-  error: string
+  error: string,
+  extra?: Record<string, unknown>
 ) {
   return NextResponse.json(
-    { errorCode, error },
+    { errorCode, error, ...extra },
     { status }
   );
 }
@@ -74,6 +83,18 @@ function createErrorResponse(
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getSession();
+    const limit = getUsageLimit(session);
+    const subject = buildUsageSubject(request, session);
+    
+    // 現在の利用回数をチェック（ここで制限を超えていれば早期エラー）
+    const currentCount = await getCurrentUsageCount(subject);
+    if (currentCount >= limit) {
+      return createErrorResponse(429, 'USAGE_LIMIT_EXCEEDED', `今月の利用上限（${limit}回）に達しました。`, {
+        usage: { current: currentCount, limit }
+      });
+    }
+
     const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
     let address = typeof body?.address === 'string' ? body.address.trim() : '';
     const lat = typeof body?.lat === 'number' ? body.lat : null;
@@ -124,7 +145,10 @@ export async function POST(request: NextRequest) {
       geocodeResult.data.city
     );
 
-    // 4. 判定結果の構築
+    // 4. 重い処理(ジオコーディング+自動判定)を実際に実行完了したので、利用回数を1回消費する
+    const usageResult = await consumeUsage(subject, limit);
+
+    // 5. 判定結果の構築
     const z = zoningResult.zoning;
     const result: CheckResult = {
       address,
@@ -160,6 +184,10 @@ export async function POST(request: NextRequest) {
       },
       dataMeta: {
         municipalityLastVerifiedAt: MUNICIPALITY_DATA_LAST_VERIFIED_AT,
+      },
+      usage: {
+        limit: usageResult.limit,
+        current: usageResult.current,
       },
       disclaimer:
         '⚠️ 本ツールの判定結果は参考情報です。正確な用途地域の確認は、各自治体の都市計画課にお問い合わせください。民泊営業の最終判断は、必ず管轄の保健所・自治体にご確認ください。',

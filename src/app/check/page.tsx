@@ -156,15 +156,45 @@ export default function CheckPage() {
       {/* エラー表示 */}
       {error && (
         <div className={styles.errorBox}>
-          <span>❌</span> {error}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+            <span style={{ fontSize: '20px' }}>❌</span>
+            <div>
+              <p style={{ fontWeight: 'bold', marginBottom: '8px' }}>{error}</p>
+              {result?.usage && result.usage.current >= result.usage.limit && (
+                <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255,255,255,0.8)', borderRadius: '8px', color: '#333', fontSize: '14px' }}>
+                  <p style={{ marginBottom: '8px' }}>
+                    無料プラン（ゲスト）の利用回数は<strong>月3回まで</strong>です。<br />
+                    引き続き無制限（または大幅増枠）でご利用いただくには、有料プランへの加入をご検討ください。
+                  </p>
+                  <a
+                    href="https://aosalonai.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                    style={{ fontSize: '13px', padding: '6px 12px' }}
+                  >
+                    🚀 有料プラン（あおサロンAI）を見る
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
       {/* 結果表示 */}
-      {result && (
+      {result && !error && (
         <div className={styles.results}>
-          {/* 印刷/PDF保存ボタン */}
-          <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          {/* ツールバー (利用回数 ＆ 印刷ボタン) */}
+          <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            {/* 利用回数表示 */}
+            {result.usage && (
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', background: 'var(--bg-glass)', padding: '6px 12px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                今月の利用状況: <strong>{result.usage.current}</strong> / {result.usage.limit === Infinity || result.usage.limit > 1000 ? '無制限' : result.usage.limit} 回
+              </div>
+            )}
+            
+            {/* 印刷/PDF保存ボタン */}
             <button
               onClick={() => window.print()}
               className="btn btn-secondary"

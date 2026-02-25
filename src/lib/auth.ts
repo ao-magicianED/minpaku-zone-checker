@@ -130,9 +130,9 @@ export function getUsageLimit(session: SessionPayload | null): number {
 
   switch (session.planTier) {
     case 'premium':
-      return Infinity; // 無制限
+      return 50; // Premium: 50回/月
     case 'light':
-      return 30; // 30回/月
+      return 15; // Light: 15回/月
     default:
       return 3;
   }
