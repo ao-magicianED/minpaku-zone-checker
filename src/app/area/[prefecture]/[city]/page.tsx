@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getAllMunicipalities, findMunicipality, findMunicipalitiesByPrefecture, MUNICIPALITY_DATA_LAST_VERIFIED_AT } from '@/lib/municipality-data';
+import { getMunicipalityContent } from '@/lib/municipality-content';
 import styles from '../../area.module.css';
 
 interface CityPageProps {
@@ -45,23 +46,61 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
   };
 }
 
+/** テキスト内の \n を <br/> に変換し、**太字** をパースするヘルパー */
+function renderMarkdown(text: string) {
+  const parts = text.split('\n');
+  return parts.map((line, i) => {
+    // **太字** を <strong> に変換
+    const segments = line.split(/(\*\*[^*]+\*\*)/g);
+    return (
+      <span key={i}>
+        {i > 0 && <br />}
+        {segments.map((seg, j) => {
+          if (seg.startsWith('**') && seg.endsWith('**')) {
+            return <strong key={j}>{seg.slice(2, -2)}</strong>;
+          }
+          return <span key={j}>{seg}</span>;
+        })}
+      </span>
+    );
+  });
+}
+
 export default async function CityPage({ params }: CityPageProps) {
   const { prefecture, city } = await params;
   const decodedPref = decodeURIComponent(prefecture);
   const decodedCity = decodeURIComponent(city);
   const m = findMunicipality(decodedPref, decodedCity);
+  const content = getMunicipalityContent(decodedPref, decodedCity);
 
   // 同じ都道府県の別の自治体（関連エリア）
   const siblings = findMunicipalitiesByPrefecture(decodedPref).filter((s) => s.city !== decodedCity);
 
+  // 全FAQを統合（テンプレFAQ + リッチコンテンツの追加FAQ）
+  const allFaq = [
+    ...(m ? [
+      {
+        question: `${decodedCity}で民泊営業は可能ですか？`,
+        answer: `${decodedCity}では、住宅宿泊事業法（民泊新法）に基づき年間${m.maxDays}日まで営業可能です。${m.hasAreaRestriction ? `ただし、${m.areaRestrictionDetail}などの区域制限があります。` : '特段の区域制限はありませんが、工業専用地域での営業は全国共通で不可です。'}届出先は${m.submissionTo}です。`,
+      },
+      {
+        question: `${decodedCity}の民泊の営業日数上限は何日ですか？`,
+        answer: `${decodedCity}の民泊営業日数の上限は年間${m.maxDays}日です。${m.maxDays < 180 ? '住宅宿泊事業法の法定上限（180日）より厳しい上乗せ条例が適用されています。' : '住宅宿泊事業法の法定上限と同じです。'}`,
+      },
+      {
+        question: `${decodedCity}で民泊を始めるにはどこに届出しますか？`,
+        answer: `${decodedCity}で民泊を始めるには、${m.submissionTo}に届出を行います。問い合わせ先: ${m.contact}。詳細は公式ガイドラインをご確認ください。`,
+      },
+    ] : []),
+    ...(content?.additionalFaq ?? []),
+  ];
+
   // JSON-LD: Article
-  const articleJsonLd = {
+  const articleJsonLd = m ? {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: `${decodedCity}（${decodedPref}）の民泊条例・上乗せ規制【2026年最新】`,
-    description: m
-      ? `${decodedCity}の民泊営業日数は年間${m.maxDays}日。${m.hasAreaRestriction ? m.areaRestrictionDetail : '区域制限なし'}。届出先: ${m.submissionTo}。`
-      : `${decodedCity}（${decodedPref}）の民泊条例情報。`,
+    description: content?.leadText || `${decodedCity}の民泊営業日数は年間${m.maxDays}日。${m.hasAreaRestriction ? m.areaRestrictionDetail : '区域制限なし'}。`,
     datePublished: '2026-02-24',
     dateModified: MUNICIPALITY_DATA_LAST_VERIFIED_AT,
     author: { '@type': 'Organization', name: 'あおサロンAI', url: 'https://aosalonai.com' },
@@ -70,48 +109,17 @@ export default async function CityPage({ params }: CityPageProps) {
       '@type': 'WebPage',
       '@id': `https://minpaku-checker.aosalonai.com/area/${encodeURIComponent(decodedPref)}/${encodeURIComponent(decodedCity)}`,
     },
-  };
+  } : null;
 
   // JSON-LD: FAQPage
-  const faqJsonLd = m ? {
+  const faqJsonLd = allFaq.length > 0 ? {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: [
-      {
-        '@type': 'Question',
-        name: `${decodedCity}で民泊営業は可能ですか？`,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `${decodedCity}では、住宅宿泊事業法（民泊新法）に基づき年間${m.maxDays}日まで営業可能です。${m.hasAreaRestriction ? `ただし、${m.areaRestrictionDetail}などの区域制限があります。` : '特段の区域制限はありません。'}届出先は${m.submissionTo}です。`,
-        },
-      },
-      {
-        '@type': 'Question',
-        name: `${decodedCity}の民泊の営業日数上限は何日ですか？`,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `${decodedCity}の民泊営業日数の上限は年間${m.maxDays}日です。${m.maxDays < 180 ? '住宅宿泊事業法の法定上限（180日）より厳しい上乗せ条例が適用されています。' : '住宅宿泊事業法の法定上限と同じです。'}`,
-        },
-      },
-      {
-        '@type': 'Question',
-        name: `${decodedCity}で民泊を始めるにはどこに届出しますか？`,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: `${decodedCity}で民泊を始めるには、${m.submissionTo}に届出を行います。問い合わせ先: ${m.contact}。詳細は公式ガイドラインをご確認ください。`,
-        },
-      },
-      {
-        '@type': 'Question',
-        name: `${decodedCity}に民泊の区域制限はありますか？`,
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: m.hasAreaRestriction
-            ? `はい。${decodedCity}には区域制限があります。${m.areaRestrictionDetail}。物件の用途地域を事前に確認することが重要です。`
-            : `${decodedCity}には特段の区域制限はありません。ただし、用途地域によっては旅館業法での営業が制限される場合があるため、物件の用途地域を事前に確認することをおすすめします。`,
-        },
-      },
-    ],
+    mainEntity: allFaq.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+    })),
   } : null;
 
   // JSON-LD: BreadcrumbList
@@ -126,6 +134,7 @@ export default async function CityPage({ params }: CityPageProps) {
     ],
   };
 
+  // ──────── 未登録自治体のフォールバック ────────
   if (!m) {
     return (
       <div className={styles.container}>
@@ -141,21 +150,18 @@ export default async function CityPage({ params }: CityPageProps) {
         </nav>
         <h1 className={styles.pageTitle}>{decodedCity}（{decodedPref}）</h1>
         <div className="glass-card" style={{ padding: '32px', textAlign: 'center' }}>
-          <p style={{ marginBottom: '16px', fontSize: '15px' }}>
-            この自治体の条例データはまだ登録されていません。
-          </p>
-          <Link href="/check" className="btn btn-primary">
-            住所チェッカーで直接調べる →
-          </Link>
+          <p style={{ marginBottom: '16px', fontSize: '15px' }}>この自治体の条例データはまだ登録されていません。</p>
+          <Link href="/check" className="btn btn-primary">住所チェッカーで直接調べる →</Link>
         </div>
       </div>
     );
   }
 
+  // ──────── メインページ ────────
   return (
     <div className={styles.container}>
       {/* JSON-LD */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
+      {articleJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />}
       {faqJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
 
@@ -173,17 +179,23 @@ export default async function CityPage({ params }: CityPageProps) {
       <h1 className={styles.pageTitle}>
         🏛️ {decodedCity}（{decodedPref}）の民泊条例【2026年最新】
       </h1>
+
+      {/* リード文 — リッチコンテンツがある場合は記事調の文章 */}
       <p className={styles.pageSubtitle}>
-        {decodedCity}で民泊（住宅宿泊事業）を始めたい方へ。
-        この記事では、{decodedCity}の<strong>上乗せ条例による営業日数制限・区域制限・届出先</strong>を詳しく解説します。
-        物件を契約する前に必ず確認しておきたいポイントをまとめました。
+        {content ? content.leadText : (
+          <>
+            {decodedCity}で民泊（住宅宿泊事業）を始めたい方へ。
+            この記事では、{decodedCity}の<strong>上乗せ条例による営業日数制限・区域制限・届出先</strong>を詳しく解説します。
+            物件を契約する前に必ず確認しておきたいポイントをまとめました。
+          </>
+        )}
         <br />
         <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
           最終更新日: {MUNICIPALITY_DATA_LAST_VERIFIED_AT} / データ提供: {m.owner}
         </span>
       </p>
 
-      {/* ──────────────── 条例サマリカード ──────────────── */}
+      {/* ──── 1. サマリカード ──── */}
       <section className={styles.summaryCards}>
         <div className={styles.summaryCard}>
           <div className={styles.summaryCardIcon}>📅</div>
@@ -192,15 +204,11 @@ export default async function CityPage({ params }: CityPageProps) {
             <span className={styles.daysUnit}>日/年</span>
           </div>
           <div className={styles.summaryCardLabel}>営業日数上限</div>
-          {m.maxDays < 180 && (
-            <div className={styles.summaryCardNote}>法定上限（180日）より厳しい</div>
-          )}
+          {m.maxDays < 180 && <div className={styles.summaryCardNote}>法定上限（180日）より厳しい</div>}
         </div>
         <div className={styles.summaryCard}>
           <div className={styles.summaryCardIcon}>{m.hasAreaRestriction ? '⚠️' : '✅'}</div>
-          <div className={styles.summaryCardValue}>
-            {m.hasAreaRestriction ? 'あり' : 'なし'}
-          </div>
+          <div className={styles.summaryCardValue}>{m.hasAreaRestriction ? 'あり' : 'なし'}</div>
           <div className={styles.summaryCardLabel}>区域制限</div>
         </div>
         <div className={styles.summaryCard}>
@@ -212,70 +220,104 @@ export default async function CityPage({ params }: CityPageProps) {
         </div>
       </section>
 
-      {/* ──────────────── 条例の詳細 ──────────────── */}
+      {/* ──── 2. 条例の詳細 ──── */}
       <section className={`glass-card ${styles.detailSection}`}>
         <h2 className={styles.detailSectionTitle}>📋 {decodedCity}の民泊条例の詳細</h2>
-        <table className={styles.detailTable}>
-          <tbody>
-            <tr>
-              <th>📅 年間営業日数上限</th>
-              <td>
-                <span className={styles.daysHighlight}>{m.maxDays}</span>
-                <span className={styles.daysUnit}>日 / 年</span>
-                {m.maxDays < 180 ? (
-                  <span style={{ display: 'block', fontSize: '12px', color: '#f0ad4e', marginTop: '4px' }}>
-                    ※ 住宅宿泊事業法の法定上限は年間180日ですが、{decodedCity}では独自の上乗せ条例により{m.maxDays}日に制限されています。
-                  </span>
-                ) : (
-                  <span style={{ display: 'block', fontSize: '12px', color: '#4caf50', marginTop: '4px' }}>
-                    ※ 住宅宿泊事業法の法定上限と同じ180日です。
-                  </span>
-                )}
-              </td>
-            </tr>
-            <tr>
-              <th>🗺️ 区域制限</th>
-              <td>
-                {m.hasAreaRestriction ? (
-                  <>
-                    <span style={{ color: '#f0ad4e', fontWeight: 600 }}>⚠️ 区域制限あり</span>
-                    <span style={{ display: 'block', marginTop: '8px', fontSize: '14px', lineHeight: '1.7' }}>
-                      {m.areaRestrictionDetail}
+        {content?.regulationDetail ? (
+          <div style={{ fontSize: '14px', lineHeight: '1.9', color: 'var(--text-secondary)' }}>
+            <p>{renderMarkdown(content.regulationDetail)}</p>
+          </div>
+        ) : (
+          <table className={styles.detailTable}>
+            <tbody>
+              <tr>
+                <th>📅 年間営業日数上限</th>
+                <td>
+                  <span className={styles.daysHighlight}>{m.maxDays}</span>
+                  <span className={styles.daysUnit}>日 / 年</span>
+                  {m.maxDays < 180 ? (
+                    <span style={{ display: 'block', fontSize: '12px', color: '#f0ad4e', marginTop: '4px' }}>
+                      ※ 住宅宿泊事業法の法定上限は年間180日ですが、{decodedCity}では独自の上乗せ条例により{m.maxDays}日に制限されています。
                     </span>
-                    <span style={{ display: 'block', marginTop: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                      💡 ヒント: 物件の用途地域が制限エリアに該当するかは、当サイトの住所チェッカーで確認できます。
+                  ) : (
+                    <span style={{ display: 'block', fontSize: '12px', color: '#4caf50', marginTop: '4px' }}>
+                      ※ 住宅宿泊事業法の法定上限と同じ180日です。
                     </span>
-                  </>
-                ) : (
-                  <>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <th>🗺️ 区域制限</th>
+                <td>
+                  {m.hasAreaRestriction ? (
+                    <>
+                      <span style={{ color: '#f0ad4e', fontWeight: 600 }}>⚠️ 区域制限あり</span>
+                      <span style={{ display: 'block', marginTop: '8px', fontSize: '14px', lineHeight: '1.7' }}>{m.areaRestrictionDetail}</span>
+                    </>
+                  ) : (
                     <span style={{ color: '#4caf50', fontWeight: 600 }}>✅ 特段の区域制限なし</span>
-                    <span style={{ display: 'block', marginTop: '4px', fontSize: '13px', color: 'var(--text-muted)' }}>
-                      {decodedCity}では用途地域による独自の区域制限は設けられていません。
-                      ただし、住宅宿泊事業法の全国共通ルール（工業専用地域での営業不可）は適用されます。
-                    </span>
-                  </>
-                )}
-              </td>
-            </tr>
-            <tr>
-              <th>📮 届出先</th>
-              <td>
-                {m.submissionTo}
-                <span style={{ display: 'block', marginTop: '4px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                  届出は営業開始の前に行う必要があります。
-                </span>
-              </td>
-            </tr>
-            <tr>
-              <th>📞 問い合わせ先</th>
-              <td>{m.contact}</td>
-            </tr>
-          </tbody>
-        </table>
+                  )}
+                </td>
+              </tr>
+              <tr><th>📮 届出先</th><td>{m.submissionTo}</td></tr>
+              <tr><th>📞 問い合わせ先</th><td>{m.contact}</td></tr>
+            </tbody>
+          </table>
+        )}
       </section>
 
-      {/* ──────────────── 特記事項（拡充版） ──────────────── */}
-      {m.notes && (
+      {/* ──── 3. 区域制限の詳細（リッチコンテンツのみ） ──── */}
+      {content?.areaRestrictionDetail && (
+        <section className={`glass-card ${styles.detailSection}`}>
+          <h2 className={styles.detailSectionTitle}>🗺️ {decodedCity}の区域制限を詳しく解説</h2>
+          <div style={{ fontSize: '14px', lineHeight: '1.9', color: 'var(--text-secondary)' }}>
+            <p>{renderMarkdown(content.areaRestrictionDetail)}</p>
+          </div>
+        </section>
+      )}
+
+      {/* ──── 4. この自治体の民泊の魅力（リッチコンテンツのみ） ──── */}
+      {content?.attractionPoints && (
+        <section className={`glass-card ${styles.detailSection}`}>
+          <h2 className={styles.detailSectionTitle}>✨ {decodedCity}で民泊を運営するメリット</h2>
+          <div style={{ fontSize: '14px', lineHeight: '1.9', color: 'var(--text-secondary)' }}>
+            <p>{renderMarkdown(content.attractionPoints)}</p>
+          </div>
+        </section>
+      )}
+
+      {/* ──── 5. 運営上の注意点（リッチコンテンツのみ） ──── */}
+      {content?.operationCautions && (
+        <section className={`glass-card ${styles.detailSection}`}>
+          <h2 className={styles.detailSectionTitle}>⚠️ {decodedCity}での民泊運営 注意点・リスク</h2>
+          <div style={{ fontSize: '14px', lineHeight: '1.9', color: 'var(--text-secondary)' }}>
+            <p>{renderMarkdown(content.operationCautions)}</p>
+          </div>
+        </section>
+      )}
+
+      {/* ──── 6. エリア別ガイド（リッチコンテンツのみ） ──── */}
+      {content?.areaGuide && content.areaGuide.length > 0 && (
+        <section className={styles.detailSection}>
+          <h2 className={styles.detailSectionTitle}>📍 {decodedCity}のエリア別ガイド</h2>
+          <div className={styles.cardGrid}>
+            {content.areaGuide.map((area, i) => (
+              <div key={i} className={`glass-card`} style={{ padding: '20px' }}>
+                <div style={{ fontSize: '24px', marginBottom: '8px' }}>{area.icon}</div>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px', color: 'var(--text-primary)' }}>
+                  {area.title}
+                </h3>
+                <p style={{ fontSize: '13px', lineHeight: '1.7', color: 'var(--text-secondary)' }}>
+                  {area.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ──── 7. 特記事項（基本データのnotesから） ──── */}
+      {m.notes && !content && (
         <section className={`glass-card ${styles.detailSection}`}>
           <h2 className={styles.detailSectionTitle}>💡 {decodedCity}で民泊を始める際のポイント</h2>
           <div style={{ fontSize: '14px', lineHeight: '1.9', color: 'var(--text-secondary)' }}>
@@ -294,7 +336,7 @@ export default async function CityPage({ params }: CityPageProps) {
         </section>
       )}
 
-      {/* ──────────────── 法定基準との比較 ──────────────── */}
+      {/* ──── 8. 法定基準との比較 ──── */}
       <section className={`glass-card ${styles.detailSection}`}>
         <h2 className={styles.detailSectionTitle}>⚖️ 住宅宿泊事業法と{decodedCity}条例の比較</h2>
         <table className={styles.detailTable}>
@@ -319,11 +361,7 @@ export default async function CityPage({ params }: CityPageProps) {
               <td style={{ fontWeight: 600 }}>区域制限</td>
               <td>工業専用地域のみ不可</td>
               <td style={{ fontWeight: 600 }}>
-                {m.hasAreaRestriction ? (
-                  <span style={{ color: '#f0ad4e' }}>追加制限あり</span>
-                ) : (
-                  <span style={{ color: '#4caf50' }}>追加制限なし</span>
-                )}
+                {m.hasAreaRestriction ? <span style={{ color: '#f0ad4e' }}>追加制限あり</span> : <span style={{ color: '#4caf50' }}>追加制限なし</span>}
               </td>
             </tr>
             <tr>
@@ -335,7 +373,7 @@ export default async function CityPage({ params }: CityPageProps) {
         </table>
       </section>
 
-      {/* ──────────────── 民泊開業ステップ ──────────────── */}
+      {/* ──── 9. 開業ステップ ──── */}
       <section className={`glass-card ${styles.detailSection}`}>
         <h2 className={styles.detailSectionTitle}>🚀 {decodedCity}で民泊を開業するまでのステップ</h2>
         <div className={styles.stepList}>
@@ -373,10 +411,14 @@ export default async function CityPage({ params }: CityPageProps) {
               <h3 className={styles.stepTitle}>{m.submissionTo}へ届出</h3>
               <p className={styles.stepDescription}>
                 必要書類を揃えて{m.submissionTo}に届出を行います。届出番号が交付されたら営業開始可能です。
-                <br />
-                <a href={m.guidelineUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-color)', fontSize: '13px' }}>
-                  📎 {decodedCity}の公式ガイドラインを確認する →
-                </a>
+                {content?.relatedLinks?.[0] && (
+                  <>
+                    <br />
+                    <a href={content.relatedLinks[0].url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-color)', fontSize: '13px' }}>
+                      📎 {decodedCity}の公式ガイドラインを確認する →
+                    </a>
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -392,85 +434,61 @@ export default async function CityPage({ params }: CityPageProps) {
         </div>
       </section>
 
-      {/* ──────────────── よくある質問（FAQ） ──────────────── */}
+      {/* ──── 10. 公式リンク集（リッチコンテンツ版は拡充） ──── */}
       <section className={`glass-card ${styles.detailSection}`}>
-        <h2 className={styles.detailSectionTitle}>❓ {decodedCity}の民泊に関するよくある質問</h2>
-        <div className={styles.faqList}>
-          <details className={styles.faqItem}>
-            <summary className={styles.faqQuestion}>
-              {decodedCity}で民泊営業は可能ですか？
-            </summary>
-            <div className={styles.faqAnswer}>
-              住宅宿泊事業法（民泊新法）に基づき、{decodedCity}では年間{m.maxDays}日まで営業可能です。
-              {m.hasAreaRestriction
-                ? `ただし、${m.areaRestrictionDetail}などの区域制限があるため、物件の所在地が制限エリアに該当しないか事前確認が必要です。`
-                : '特段の区域制限はありませんが、工業専用地域での営業は全国共通で不可です。'}
-            </div>
-          </details>
-          <details className={styles.faqItem}>
-            <summary className={styles.faqQuestion}>
-              営業日数の上限を超えたらどうなりますか？
-            </summary>
-            <div className={styles.faqAnswer}>
-              年間{m.maxDays}日の上限を超えて営業した場合、行政指導や業務停止命令の対象となる可能性があります。
-              違反が悪質な場合は罰金（100万円以下）が科される場合もあります。
-              営業日数を超える場合は、旅館業法（簡易宿所営業）の許可取得を検討してください。
-            </div>
-          </details>
-          <details className={styles.faqItem}>
-            <summary className={styles.faqQuestion}>
-              マンションの一室でも民泊は可能ですか？
-            </summary>
-            <div className={styles.faqAnswer}>
-              法律上は可能ですが、マンションの管理規約で民泊が禁止されていないことが前提条件です。
-              近年、多くのマンションで民泊禁止の管理規約改正が進んでいます。
-              分譲マンションの場合は管理組合、賃貸の場合は賃貸借契約の内容を必ず確認してください。
-            </div>
-          </details>
-          <details className={styles.faqItem}>
-            <summary className={styles.faqQuestion}>
-              届出に必要な書類は何ですか？
-            </summary>
-            <div className={styles.faqAnswer}>
-              主な必要書類は、①届出書、②住宅の図面、③住宅の登記事項証明書、④住宅が賃借物件の場合は転貸承諾書、
-              ⑤マンションの場合は管理規約の写し、⑥消防法令適合通知書などです。
-              詳しくは<a href={m.guidelineUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-color)' }}>{decodedCity}の公式ガイドライン</a>をご確認ください。
-            </div>
-          </details>
-        </div>
+        <h2 className={styles.detailSectionTitle}>🔗 {decodedCity}の公式情報・関連リンク</h2>
+        {content?.relatedLinks && content.relatedLinks.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {content.relatedLinks.map((link, i) => (
+              <a
+                key={i}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.relatedCard}
+                style={{ textDecoration: 'none' }}
+              >
+                <span className={styles.relatedCardTitle}>🌐 {link.label}</span>
+                {link.description && (
+                  <span className={styles.relatedCardMeta}>{link.description}</span>
+                )}
+              </a>
+            ))}
+          </div>
+        ) : (
+          <table className={styles.detailTable}>
+            <tbody>
+              <tr>
+                <th>公式ガイドライン</th>
+                <td>
+                  <a href={m.guidelineUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-color)', wordBreak: 'break-all' }}>
+                    🌐 {decodedCity}の民泊に関する公式ページを開く ↗
+                  </a>
+                </td>
+              </tr>
+              <tr><th>問い合わせ先</th><td>{m.contact}</td></tr>
+              <tr><th>データ最終確認日</th><td>{MUNICIPALITY_DATA_LAST_VERIFIED_AT}</td></tr>
+            </tbody>
+          </table>
+        )}
       </section>
 
-      {/* ──────────────── 公式ガイドライン ──────────────── */}
-      <section className={`glass-card ${styles.detailSection}`}>
-        <h2 className={styles.detailSectionTitle}>🔗 {decodedCity}の公式情報</h2>
-        <table className={styles.detailTable}>
-          <tbody>
-            <tr>
-              <th>公式ガイドライン</th>
-              <td>
-                <a
-                  href={m.guidelineUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: 'var(--accent-color)', wordBreak: 'break-all' }}
-                >
-                  🌐 {decodedCity}の民泊に関する公式ページを開く ↗
-                </a>
-              </td>
-            </tr>
-            <tr>
-              <th>問い合わせ先</th>
-              <td>{m.contact}</td>
-            </tr>
-            <tr>
-              <th>データ最終確認日</th>
-              <td>{MUNICIPALITY_DATA_LAST_VERIFIED_AT}</td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+      {/* ──── 11. FAQ ──── */}
+      {allFaq.length > 0 && (
+        <section className={`glass-card ${styles.detailSection}`}>
+          <h2 className={styles.detailSectionTitle}>❓ {decodedCity}の民泊に関するよくある質問</h2>
+          <div className={styles.faqList}>
+            {allFaq.map((faq, i) => (
+              <details key={i} className={styles.faqItem}>
+                <summary className={styles.faqQuestion}>{faq.question}</summary>
+                <div className={styles.faqAnswer}>{faq.answer}</div>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* ──────────────── チェッカーCTA ──────────────── */}
+      {/* ──── 12. チェッカーCTA ──── */}
       <div className={styles.ctaBox}>
         <h2 className={styles.ctaTitle}>🔍 {decodedCity}の物件を住所でチェック</h2>
         <p className={styles.ctaDescription}>
@@ -478,17 +496,13 @@ export default async function CityPage({ params }: CityPageProps) {
           {decodedCity}の条例情報も合わせて表示します。
         </p>
         <div className={styles.ctaButtons}>
-          <Link
-            href="/check"
-            className="btn btn-primary"
-            style={{ padding: '14px 36px', fontSize: '16px', fontWeight: 'bold' }}
-          >
+          <Link href="/check" className="btn btn-primary" style={{ padding: '14px 36px', fontSize: '16px', fontWeight: 'bold' }}>
             住所チェッカーを使う →
           </Link>
         </div>
       </div>
 
-      {/* ──────────────── 民泊GPT CTA ──────────────── */}
+      {/* ──── 13. あおサロンAI CTA ──── */}
       <div className={styles.ctaBox} style={{ marginTop: '16px', background: 'linear-gradient(135deg, rgba(28, 181, 224, 0.15), rgba(0, 8, 81, 0.2))', borderColor: 'rgba(28, 181, 224, 0.4)' }}>
         <h2 className={styles.ctaTitle}>🤖 この地域の条例をもっと詳しくAIに聞く</h2>
         <p className={styles.ctaDescription}>
@@ -496,50 +510,30 @@ export default async function CityPage({ params }: CityPageProps) {
           {decodedCity}の最新条例にも対応しています。あおサロンAI会員なら無償！
         </p>
         <div className={styles.ctaButtons}>
-          <a
-            href="https://aosalonai.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-primary"
-            style={{ padding: '12px 24px', fontSize: '14px', fontWeight: 'bold', background: 'linear-gradient(135deg, #1cb5e0 0%, #000851 100%)', border: 'none' }}
-          >
+          <a href="https://aosalonai.com" target="_blank" rel="noopener noreferrer" className="btn btn-primary"
+            style={{ padding: '12px 24px', fontSize: '14px', fontWeight: 'bold', background: 'linear-gradient(135deg, #1cb5e0 0%, #000851 100%)', border: 'none' }}>
             🚀 あおサロンAIを見る
           </a>
-          <a
-            href="https://note.com/ao_salon_ai/n/n888ddb49b460"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-secondary"
-            style={{ padding: '12px 24px', fontSize: '14px' }}
-          >
+          <a href="https://note.com/ao_salon_ai/n/n888ddb49b460" target="_blank" rel="noopener noreferrer" className="btn btn-secondary"
+            style={{ padding: '12px 24px', fontSize: '14px' }}>
             📝 Noteで単体購入
           </a>
         </div>
       </div>
 
-      {/* ──────────────── 関連エリア ──────────────── */}
+      {/* ──── 14. 関連エリア ──── */}
       {siblings.length > 0 && (
         <section className={styles.detailSection} style={{ marginTop: '40px' }}>
           <h2 className={styles.detailSectionTitle}>🏘️ {decodedPref}の他のエリアも見る</h2>
           <div className={styles.relatedGrid}>
             {siblings.slice(0, 8).map((s) => (
-              <Link
-                key={s.city}
-                href={`/area/${encodeURIComponent(s.prefecture)}/${encodeURIComponent(s.city)}`}
-                className={styles.relatedCard}
-              >
+              <Link key={s.city} href={`/area/${encodeURIComponent(s.prefecture)}/${encodeURIComponent(s.city)}`} className={styles.relatedCard}>
                 <span className={styles.relatedCardTitle}>{s.city}</span>
-                <span className={styles.relatedCardMeta}>
-                  📅 {s.maxDays}日 {s.hasAreaRestriction ? '⚠️制限あり' : '✅制限なし'}
-                </span>
+                <span className={styles.relatedCardMeta}>📅 {s.maxDays}日 {s.hasAreaRestriction ? '⚠️制限あり' : '✅制限なし'}</span>
               </Link>
             ))}
             {siblings.length > 8 && (
-              <Link
-                href={`/area/${encodeURIComponent(decodedPref)}`}
-                className={styles.relatedCard}
-                style={{ justifyContent: 'center', color: 'var(--accent-color)' }}
-              >
+              <Link href={`/area/${encodeURIComponent(decodedPref)}`} className={styles.relatedCard} style={{ justifyContent: 'center', color: 'var(--accent-color)' }}>
                 他 {siblings.length - 8} 自治体を見る →
               </Link>
             )}
@@ -547,7 +541,7 @@ export default async function CityPage({ params }: CityPageProps) {
         </section>
       )}
 
-      {/* ──────────────── 免責事項 ──────────────── */}
+      {/* ──── 免責事項 ──── */}
       <div className={styles.disclaimer}>
         ⚠️ 本ページの情報は{MUNICIPALITY_DATA_LAST_VERIFIED_AT}時点の{decodedCity}の公開情報に基づいています。
         条例の改正等により最新の内容と異なる場合があります。
