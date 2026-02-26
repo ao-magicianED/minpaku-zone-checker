@@ -151,6 +151,7 @@ export default function RootLayout({
             <ul className="nav-links">
               <li><Link href="/">ホーム</Link></li>
               <li><Link href="/check">住所チェック</Link></li>
+              <li><Link href="/area">エリア一覧</Link></li>
               <li><Link href="/guide">用途地域ガイド</Link></li>
               <NavAuth />
               <li>
