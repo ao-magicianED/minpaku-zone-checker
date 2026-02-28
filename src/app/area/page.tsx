@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getRegisteredPrefectures, findMunicipalitiesByPrefecture } from '@/lib/municipality-data';
+import AreaSearch from './AreaSearch';
 import styles from './area.module.css';
 
 export const metadata: Metadata = {
@@ -25,6 +26,11 @@ const REGION_BLOCKS = [
 export default function AreaIndexPage() {
   const registeredPrefectures = getRegisteredPrefectures();
 
+  // 実際に存在する地方ブロックのみ抽出（ナビゲーション用）
+  const activeRegions = REGION_BLOCKS.filter((region) =>
+    region.prefectures.some((p) => registeredPrefectures.includes(p))
+  );
+
   return (
     <div className={styles.container}>
       {/* パンくず */}
@@ -40,6 +46,20 @@ export default function AreaIndexPage() {
         都道府県を選択すると、各自治体の営業日数制限・区域制限・届出先などの詳細を確認できます。
       </p>
 
+      {/* 検索コンポーネント */}
+      <AreaSearch />
+
+      {/* カテゴリナビゲーション */}
+      {activeRegions.length > 0 && (
+        <nav className={styles.categoryNav}>
+          {activeRegions.map((region) => (
+            <a key={region.name} href={`#region-${region.name}`} className={styles.categoryAnchor}>
+              {region.name}
+            </a>
+          ))}
+        </nav>
+      )}
+
       {REGION_BLOCKS.map((region) => {
         const availablePrefectures = region.prefectures.filter((p) =>
           registeredPrefectures.includes(p)
@@ -47,7 +67,7 @@ export default function AreaIndexPage() {
         if (availablePrefectures.length === 0) return null;
 
         return (
-          <section key={region.name} className={styles.regionBlock}>
+          <section key={region.name} id={`region-${region.name}`} className={styles.regionBlock}>
             <h2 className={styles.regionTitle}>{region.name}</h2>
             <div className={styles.cardGrid}>
               {availablePrefectures.map((pref) => {
