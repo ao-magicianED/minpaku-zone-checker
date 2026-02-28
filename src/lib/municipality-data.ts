@@ -668,6 +668,19 @@ const BASE_MUNICIPALITY_DATA: Array<Omit<MunicipalityInfo, 'owner' | 'lastChecke
     notes: 'ニセコスキーリゾートの中心地。外国人オーナー・ゲストが多い。冬季は非常に高い収益が見込める。',
     contact: '倶知安町 住民環境課（TEL: 0136-56-8008）',
   },
+  
+  // 北海道 札幌市
+  {
+    prefecture: '北海道',
+    city: '札幌市',
+    maxDays: 180,
+    hasAreaRestriction: true,
+    areaRestrictionDetail: '住居専用地域では原則として営業日数を制限',
+    submissionTo: '札幌市 保健福祉局',
+    guidelineUrl: 'https://www.city.sapporo.jp/hokenjo/f1seikatu/minpaku.html',
+    notes: '雪まつりなどイベント時の爆発的な需要がある一方、冬場の除雪対応が必須。',
+    contact: '札幌市 保健所生活環境課（TEL: 011-622-5165）',
+  },
 
   // 大分県
   {
