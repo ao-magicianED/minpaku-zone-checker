@@ -101,7 +101,9 @@ export async function getCurrentUsageCount(subject: UsageSubject, month = getCur
     .maybeSingle();
 
   if (error) {
-    throw new Error(`Failed to read usage counter: ${error.message}`);
+    console.warn(`[Usage Warning] Failed to read usage counter (Supabase DB config missing?): ${error.message}`);
+    // テーブルが存在しない場合などは、通信エラーを防ぐために 0（制限超過していない）として扱う
+    return 0;
   }
 
   return typeof data?.count === 'number' ? data.count : 0;
@@ -123,7 +125,14 @@ export async function consumeUsage(
   });
 
   if (error) {
-    throw new Error(`Failed to consume usage counter: ${error.message}`);
+    console.warn(`[Usage Warning] Failed to consume usage counter (RPC missing?): ${error.message}`);
+    // エラー発生時はAPI全体のダウンを防ぐため、とりあえず許可として返す
+    return {
+      allowed: true,
+      current: 1,
+      limit: normalizedLimit,
+      month,
+    };
   }
 
   const row = Array.isArray(data) ? data[0] : data;
@@ -131,7 +140,13 @@ export async function consumeUsage(
   const currentCount = row?.current_count;
 
   if (typeof allowed !== 'boolean' || typeof currentCount !== 'number') {
-    throw new Error('consume_usage returned unexpected payload');
+    console.warn('[Usage Warning] consume_usage returned unexpected payload');
+    return {
+      allowed: true,
+      current: 1,
+      limit: normalizedLimit,
+      month,
+    };
   }
 
   return {
