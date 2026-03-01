@@ -20,14 +20,15 @@ export interface ConsumeUsageResult {
 const USAGE_COUNTERS_TABLE = 'usage_counters';
 let supabaseAdminClient: SupabaseClient | null = null;
 
-function getSupabaseAdminClient(): SupabaseClient {
+function getSupabaseAdminClient(): SupabaseClient | null {
   if (supabaseAdminClient) return supabaseAdminClient;
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
+    console.warn('[Usage Warning] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing. Usage limits will be disabled.');
+    return null;
   }
 
   supabaseAdminClient = createClient(supabaseUrl, serviceRoleKey, {
@@ -44,9 +45,9 @@ function getUsageHashSalt(): string {
   if (salt) return salt;
 
   if (process.env.NODE_ENV === 'production') {
-    throw new Error('USAGE_HASH_SALT is required in production');
+    console.warn('[Usage Warning] USAGE_HASH_SALT is not set in production. Using fallback salt. Set this env var for proper IP-based rate limiting.');
   }
-  return 'dev-usage-salt';
+  return 'dev-usage-salt-fallback';
 }
 
 function getClientIp(request: NextRequest): string {
@@ -92,6 +93,10 @@ export function buildUsageSubject(request: NextRequest, session: SessionPayload 
 
 export async function getCurrentUsageCount(subject: UsageSubject, month = getCurrentMonth()): Promise<number> {
   const supabase = getSupabaseAdminClient();
+  if (!supabase) {
+    return 0; // DB接続できない場合は制限なしとする
+  }
+
   const { data, error } = await supabase
     .from(USAGE_COUNTERS_TABLE)
     .select('count')
@@ -116,6 +121,14 @@ export async function consumeUsage(
 ): Promise<ConsumeUsageResult> {
   const normalizedLimit = normalizeLimit(limit);
   const supabase = getSupabaseAdminClient();
+  if (!supabase) {
+    return {
+      allowed: true,
+      current: 1,
+      limit: normalizedLimit,
+      month,
+    };
+  }
 
   const { data, error } = await supabase.rpc('consume_usage', {
     p_month: month,

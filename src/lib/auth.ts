@@ -3,10 +3,10 @@ import { cookies } from 'next/headers';
 
 const COOKIE_NAME = 'minpaku_checker_session';
 const jwtSecret = process.env.JWT_SECRET;
-if (!jwtSecret) {
-  throw new Error('JWT_SECRET is required');
+if (!jwtSecret && process.env.NODE_ENV !== 'production') {
+  console.warn('[Auth Warning] JWT_SECRET is not set. Session features will be disabled (guest mode only).');
 }
-const JWT_SECRET = new TextEncoder().encode(jwtSecret);
+const JWT_SECRET = jwtSecret ? new TextEncoder().encode(jwtSecret) : null;
 
 export interface SessionPayload {
   memberId: string;
@@ -28,6 +28,9 @@ function isSubscriptionStatus(value: unknown): value is SessionPayload['subscrip
  * JWTセッショントークンを生成
  */
 export async function createSessionToken(payload: SessionPayload): Promise<string> {
+  if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET is not configured. Cannot create session tokens.');
+  }
   return new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -40,6 +43,7 @@ export async function createSessionToken(payload: SessionPayload): Promise<strin
  */
 export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
   try {
+    if (!JWT_SECRET) return null;
     const { payload } = await jwtVerify(token, JWT_SECRET);
 
     const memberId = payload.memberId;
