@@ -220,6 +220,22 @@ export default async function CityPage({ params }: CityPageProps) {
         </div>
       </section>
 
+      {/* ──── 公式情報への発リンク（SEO対策・権威性向上） ──── */}
+      {m.guidelineUrl && (
+        <div style={{ marginTop: '24px', marginBottom: '40px', textAlign: 'center' }}>
+          <a
+            href={m.guidelineUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.officialLinkBtn}
+          >
+            <span style={{ fontSize: '20px' }}>🏛️</span>
+            <span>{decodedCity}の公式民泊窓口・ガイドラインを確認する</span>
+            <span style={{ fontSize: '14px', opacity: 0.8 }}>↗</span>
+          </a>
+        </div>
+      )}
+
       {/* ──── 2. 条例の詳細 ──── */}
       <section className={`glass-card ${styles.detailSection}`}>
         <h2 className={styles.detailSectionTitle}>📋 {decodedCity}の民泊条例の詳細</h2>
